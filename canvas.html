@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tree Growth with Matter.js</title>
+    <script src="./matterjs.min.js"></script>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script src="./plant-self-time.js"></script>
+
+    <script>
+      // Module aliases
+      const {
+        Engine,
+        Render,
+        World,
+        Bodies,
+        Body,
+        Constraint,
+        Mouse,
+        MouseConstraint,
+      } = Matter;
+
+      // Create engine and renderer
+      const engine = Engine.create();
+      const canvas = document.getElementById("canvas");
+      const render = Render.create({
+        canvas: canvas,
+        engine: engine,
+        options: {
+          width: 1000,
+          height: 1000,
+          wireframes: false,
+          background: "#f0f0f0",
+        },
+      });
+
+      const world = engine.world;
+      world.gravity.y = 0; // No gravity for branches
+
+      // Add mouse control
+      const mouse = Mouse.create(render.canvas);
+      const mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: {
+          stiffness: 0.2,
+          render: {
+            visible: false,
+          },
+        },
+      });
+
+      World.add(world, mouseConstraint);
+
+      // Initialize the Stem
+      const root = new StemCellSelfTime(400, 500, 12, 4, 1);
+
+      root.grow(); // Grow all cells
+
+      // Run the engine and renderer
+      Engine.run(engine);
+      Render.run(render);
+    </script>
+  </body>
+</html>
