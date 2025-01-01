@@ -56,6 +56,7 @@
 
       // Initialize the Stem
       const root = new StemCellSelfTime(400, 500, 12, 4, 1);
+      Body.setStatic(root.body, true);
 
       root.grow(); // Grow all cells
 
