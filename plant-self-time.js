@@ -1,8 +1,10 @@
-const timeControl = 10;
+const timeControl = 5;
 const WIDTH = 5;
 const HEIGHT = 5;
 const growIncrement = 1;
-const maxIterations = 12;
+const maxIterations = 20;
+const constrainVisibility = false;
+const transitionPeriod = 8;
 
 // StemCell Class
 class StemCell {
@@ -57,9 +59,9 @@ class StemCell {
         bodyB: this.body,
         pointA,
         pointB,
-        stiffness: 0.5,
+        stiffness: 0.6,
         damping: 0.1,
-        render: { visible: false },
+        render: { visible: constrainVisibility },
       });
     };
 
@@ -81,24 +83,72 @@ class StemCell {
   }
 
   grow() {
+    const intermediateIterations = maxIterations - transitionPeriod;
     const intervalId = setInterval(() => {
       if (this.age >= maxIterations) {
         clearInterval(intervalId);
-        Body.setStatic(this.body, true);
-        this.body.render.fillStyle = "#6b3";
+        this.finalHarden();
         return;
       }
 
       this.age += 1;
       this.width += growIncrement;
+
+      // Scale the body to simulate growth
       Matter.Body.scale(this.body, 1 + growIncrement / this.width, 1);
 
+      // Gradually transition color and increase stiffness
+      if (this.age >= intermediateIterations) {
+        this.updateIntermediateState();
+      }
+
+      // Update constraints periodically
       if (this.age % 4 === 0) {
         this.createConstraints();
       }
-    }, 4500 / timeControl);
+    }, 2500 / timeControl);
 
+    // Trigger cell division after 5 seconds
     setTimeout(() => this.cellDivision(), 5000 / timeControl);
+  }
+
+  updateIntermediateState() {
+    // Gradually darken the green color and shift toward light brown
+    const transitionRatio =
+      (this.age - (maxIterations - transitionPeriod)) / transitionPeriod;
+    const startColor = { r: 107, g: 142, b: 35 }; // #6b8e23
+    const endColor = { r: 107, g: 51, b: 35 }; // #6b3323
+
+    const currentColor = {
+      r: Math.round(
+        startColor.r + (endColor.r - startColor.r) * transitionRatio
+      ),
+      g: Math.round(
+        startColor.g + (endColor.g - startColor.g) * transitionRatio
+      ),
+      b: Math.round(
+        startColor.b + (endColor.b - startColor.b) * transitionRatio
+      ),
+    };
+
+    this.body.render.fillStyle = `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`;
+
+    // Gradually increase stiffness toward 1.0
+    const newStiffness = 0.6 + 0.4 * transitionRatio; // Start at 0.5, end at 1.0
+    this.updateConstraintsStiffness(newStiffness);
+  }
+
+  finalHarden() {
+    Body.setStatic(this.body, true); // Make the stem rigid
+    this.body.render.fillStyle = "#6b3323"; // Fully brown color
+    this.updateConstraintsStiffness(1.0); // Max stiffness
+  }
+
+  updateConstraintsStiffness(newStiffness) {
+    // Adjust stiffness of all constraints
+    this.constraints.forEach((constraint) => {
+      constraint.stiffness = newStiffness;
+    });
   }
 
   cellDivision() {

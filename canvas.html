@@ -52,6 +52,15 @@
         },
       });
 
+      window.addEventListener("keydown", function (event) {
+        let handled = false;
+        if ((event.key = "p")) {
+          console.log("paused");
+          handled = true;
+          debugger; // 121 is the keyCode of F10
+        }
+      });
+
       World.add(world, mouseConstraint);
 
       class Seed {
