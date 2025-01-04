@@ -38,7 +38,7 @@
       });
 
       const world = engine.world;
-      world.gravity.y = 0; // No gravity for branches
+      world.gravity.y = 0.05; // No gravity for branches
 
       // Add mouse control
       const mouse = Mouse.create(render.canvas);
@@ -54,11 +54,21 @@
 
       World.add(world, mouseConstraint);
 
-      // Initialize the Stem
-      const root = new StemCellSelfTime(400, 500, 12, 4, 1);
-      Body.setStatic(root.body, true);
+      class Seed {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.body = Bodies.rectangle(x, y, 40, 8, {
+            isStatic: true,
+          });
+        }
+      }
 
-      root.grow(); // Grow all cells
+      const seed = new Seed(400, 500);
+      World.add(world, seed.body);
+      // Initialize the Stem
+      const root = new StemCell(12, 8, seed);
+      Body.setStatic(root.body, true);
 
       // Run the engine and renderer
       Engine.run(engine);

@@ -1,119 +1,115 @@
-const timeControl = 2;
-const WIDTH = 20;
-const HEIGHT = 8;
+const timeControl = 10;
+const WIDTH = 5;
+const HEIGHT = 5;
 const growIncrement = 1;
-const maxIterations = 20;
+const maxIterations = 12;
 
-// Segment Class
-
-class StemCellSelfTime {
-  constructor(x, y, width = WIDTH, height = HEIGHT) {
-    this.age = 0; // How long the segment has existed
+// StemCell Class
+class StemCell {
+  constructor(
+    width = WIDTH,
+    height = HEIGHT,
+    parent,
+    isBranch = false,
+    branchDirection = null
+  ) {
+    this.age = 0;
     this.width = width;
     this.height = height;
-    this.body = Bodies.rectangle(x, y, width, height, {
+    this.parent = parent;
+    this.isBranch = isBranch;
+    this.branchDirection = branchDirection; // "left" or "right"
+
+    // Calculate initial position
+    const currentPosition = parent.body.position;
+    let newX = currentPosition.x;
+    let newY = currentPosition.y - height - 1.5;
+
+    if (isBranch) {
+      const offset = branchDirection === "left" ? -10 : 10;
+      newX += offset;
+      newY -= 5;
+    }
+
+    this.body = Bodies.rectangle(newX, newY, width, height, {
       render: { fillStyle: "#6b8e23" },
+      friction: 0.8,
+      frictionAir: 0.1,
+      restitution: 0.2,
     });
-    this.newStemCell = null;
+
     World.add(world, this.body);
+
+    this.constraints = [];
+    this.createConstraints();
+
+    this.grow();
+  }
+
+  createConstraints() {
+    // Remove old constraints if any
+    this.constraints.forEach((constraint) => World.remove(world, constraint));
+    this.constraints = [];
+
+    const createConstraint = (pointA, pointB) => {
+      return Matter.Constraint.create({
+        bodyA: this.parent.body,
+        bodyB: this.body,
+        pointA,
+        pointB,
+        stiffness: 0.5,
+        damping: 0.1,
+        render: { visible: false },
+      });
+    };
+
+    this.constraints.push(createConstraint({ x: 0, y: 0 }, { x: 0, y: 0 }));
+    this.constraints.push(
+      createConstraint(
+        { x: -this.width / 3, y: 0 },
+        { x: this.width / 3, y: 0 }
+      )
+    );
+    this.constraints.push(
+      createConstraint(
+        { x: this.width / 3, y: 0 },
+        { x: -this.width / 3, y: 0 }
+      )
+    );
+
+    World.add(world, this.constraints);
   }
 
   grow() {
-    let iterations = 0;
-
     const intervalId = setInterval(() => {
-      if (iterations >= maxIterations) {
-        clearInterval(intervalId); // Stop the interval after reaching the limit
+      if (this.age >= maxIterations) {
+        clearInterval(intervalId);
+        Body.setStatic(this.body, true);
+        this.body.render.fillStyle = "#6b3";
         return;
       }
 
-      this.age += 1; // Increase age
-      this.width += 2; // Increase width linearly (adjust 0.2 for desired growth speed)
-      Matter.Body.scale(this.body, 1 + 2 / this.width, 1); // Scale the body
-      this.recreateConstraints(); // Update constraints
+      this.age += 1;
+      this.width += growIncrement;
+      Matter.Body.scale(this.body, 1 + growIncrement / this.width, 1);
 
-      iterations++; // Increment the counter
-    }, 2000 / timeControl);
+      if (this.age % 4 === 0) {
+        this.createConstraints();
+      }
+    }, 4500 / timeControl);
 
-    // Trigger cell division after 5 seconds
-    setTimeout(() => {
-      this.cellDivision();
-    }, 5000 / timeControl);
-  }
-
-  recreateConstraints() {
-    if (!this.newStemCell) {
-      return;
-    }
-
-    // Remove old constraints
-    if (this.constraintLeft) World.remove(world, this.constraintLeft);
-    if (this.constraintRight) World.remove(world, this.constraintRight);
-
-    this.constraintLeft = Matter.Constraint.create({
-      bodyA: this.body,
-      bodyB: this.newStemCell.body,
-      pointA: { x: -this.width / 3, y: 0 },
-      pointB: { x: this.width / 3, y: 0 },
-      stiffness: 0.97,
-    });
-
-    this.constraintRight = Matter.Constraint.create({
-      bodyA: this.body,
-      bodyB: this.newStemCell.body,
-      pointA: { x: this.width / 3, y: 0 },
-      pointB: { x: -this.width / 3, y: 0 },
-      stiffness: 0.97,
-    });
-
-    // Add updated constraints to the world
-    World.add(world, [this.constraintLeft, this.constraintRight]);
+    setTimeout(() => this.cellDivision(), 5000 / timeControl);
   }
 
   cellDivision() {
-    const currentPosition = this.body.position;
+    const branchingChance = Math.random();
+    if (!this.isBranch && branchingChance < 0.1) {
+      // 30% chance to create a left or right branch
+      const branchDirection = Math.random() > 0.5 ? "left" : "right";
+      new StemCell(WIDTH, HEIGHT, this, true, branchDirection);
+    }
 
-    // Position the new cell above the current one
-    const newX = currentPosition.x;
-    const newY = currentPosition.y - this.height - 0.5;
-
-    // Create a new StemCell
-    this.newStemCell = new StemCellSelfTime(newX, newY, WIDTH, HEIGHT);
-
-    // Add two constraints to simulate cells sticking
-    this.constraintCenter = Matter.Constraint.create({
-      bodyA: this.body,
-      bodyB: this.newStemCell.body,
-      pointA: { x: 0, y: 0 }, // Left side of first cell
-      pointB: { x: 0, y: 0 }, // Left side of second cell
-      length: this.height + 0.5,
-      stiffness: 1,
-    });
-
-    this.constraintLeft = Matter.Constraint.create({
-      bodyA: this.body,
-      bodyB: this.newStemCell.body,
-      pointA: { x: -this.width / 3, y: 0 }, // Left side of first cell
-      pointB: { x: this.width / 3, y: 0 },
-      stiffness: 0.9,
-      damping: 0.1,
-    });
-
-    this.constraintRight = Matter.Constraint.create({
-      bodyA: this.body,
-      bodyB: this.newStemCell.body,
-      pointA: { x: this.width / 3, y: 0 },
-      pointB: { x: -this.width / 3, y: 0 },
-      stiffness: 0.9,
-      damping: 0.1,
-    });
-
-    World.add(world, [
-      this.constraintLeft,
-      this.constraintRight,
-      this.constraintCenter,
-    ]);
-
-    this.newStemCell.grow();
+    // Always grow the main stem
+    new StemCell(WIDTH, HEIGHT, this);
   }
 }
