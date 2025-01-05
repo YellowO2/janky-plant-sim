@@ -1,84 +1,128 @@
-const timeControl = 5;
-const WIDTH = 5;
-const HEIGHT = 5;
-const growIncrement = 1;
-const maxIterations = 20;
-const constrainVisibility = false;
-const transitionPeriod = 8;
+const GrowthTemplates = {
+  tree: {
+    maxDepth: 6,
+    branchProbability: (depth) => 0.1 - 0.035 * depth, // Decreases with depth
+    transitionColors: { start: "#6b8e23", end: "#6b3323" },
+    stiffnessRange: { start: 0.05, end: 0.4 },
+  },
+  shrub: {
+    maxDepth: 3,
+    branchProbability: (depth) => 0.6 - 0.2 * depth, // Dense branching
+    transitionColors: { start: "#556b2f", end: "#8b4513" },
+    stiffnessRange: { start: 0.5, end: 0.8 },
+  },
+  custom: {
+    maxDepth: 4,
+    branchProbability: (depth) => 0.2 - 0.05 * depth, // Decreases with depth
+    transitionColors: { start: "#6b8e23", end: "#6b3323" },
+    stiffnessRange: { start: 0.6, end: 0.8 },
+  },
+};
 
-// StemCell Class
+const timeControl = 10;
+const WIDTH = 5;
+const HEIGHT = 2;
+const growIncrement = 1;
+const maxIterations = 25;
+const constrainVisibility = false;
+const transitionPeriod = 10;
+const BASE = { x: 600, y: 600 };
+
+let allStems = [];
+
 class StemCell {
   constructor(
     width = WIDTH,
     height = HEIGHT,
-    parent,
-    isBranch = false,
-    branchDirection = null
+    parent = null,
+    growthAngle = 0, // Angle of growth in radians, 0 = vertical
+    branchDepth = 0,
+    template = GrowthTemplates.tree,
+    generation = 0
   ) {
     this.age = 0;
     this.width = width;
     this.height = height;
     this.parent = parent;
-    this.isBranch = isBranch;
-    this.branchDirection = branchDirection; // "left" or "right"
+    this.growthAngle = growthAngle; // Angle relative to parent
+    this.branchDepth = branchDepth;
+    this.template = template;
+    this.generation = generation;
 
     // Calculate initial position
-    const currentPosition = parent.body.position;
-    let newX = currentPosition.x;
-    let newY = currentPosition.y - height - 1.5;
-
-    if (isBranch) {
-      const offset = branchDirection === "left" ? -10 : 10;
-      newX += offset;
-      newY -= 5;
-    }
+    const currentPosition = parent ? parent.body.position : { x: 0, y: 0 };
+    const offsetX = Math.sin(this.growthAngle) * (HEIGHT + 4);
+    const offsetY = -Math.cos(this.growthAngle) * (HEIGHT + 4);
+    const newX = currentPosition.x + offsetX;
+    const newY = currentPosition.y + offsetY;
 
     this.body = Bodies.rectangle(newX, newY, width, height, {
-      render: { fillStyle: "#6b8e23" },
-      friction: 0.8,
-      frictionAir: 0.1,
+      render: { fillStyle: template.transitionColors.start },
+      friction: 0.9,
+      frictionAir: 0.5,
       restitution: 0.2,
+      collisionFilter: {
+        group: growthAngle == -1, // Negative groups do not collide with each other
+      },
     });
 
     World.add(world, this.body);
 
+    allStems.push(this);
+
     this.constraints = [];
     this.createConstraints();
-
     this.grow();
   }
 
   createConstraints() {
+    if (!this.parent) return;
+
     // Remove old constraints if any
     this.constraints.forEach((constraint) => World.remove(world, constraint));
     this.constraints = [];
 
-    const createConstraint = (pointA, pointB) => {
-      return Matter.Constraint.create({
-        bodyA: this.parent.body,
-        bodyB: this.body,
-        pointA,
-        pointB,
-        stiffness: 0.6,
-        damping: 0.1,
-        render: { visible: constrainVisibility },
-      });
-    };
+    const anchorLeft = {
+      x: -(20 + this.width * 5) + this.body.position.x,
+      y: BASE.y,
+    }; // Example fixed point in the world
+    const anchorRight = {
+      x: 20 + this.width * 5 + this.body.position.x,
+      y: BASE.y,
+    }; // Another fixed point
 
-    this.constraints.push(createConstraint({ x: 0, y: 0 }, { x: 0, y: 0 }));
-    this.constraints.push(
-      createConstraint(
-        { x: -this.width / 3, y: 0 },
-        { x: this.width / 3, y: 0 }
-      )
-    );
-    this.constraints.push(
-      createConstraint(
-        { x: this.width / 3, y: 0 },
-        { x: -this.width / 3, y: 0 }
-      )
-    );
+    // Center constraint (still connected to the parent)
+    const mainConstraint = Matter.Constraint.create({
+      bodyA: this.parent.body,
+      bodyB: this.body,
+      pointA: { x: 0, y: 0 },
+      pointB: { x: 0, y: 0 },
+      stiffness: 1,
+      damping: 0.3,
+      render: { visible: constrainVisibility },
+    });
 
+    // Left constraint anchored to a world point
+    const leftConstraint = Matter.Constraint.create({
+      pointA: anchorLeft, // Fixed point in the world
+      bodyB: this.body,
+      pointB: { x: -this.width, y: 0 },
+      stiffness: this.template.stiffnessRange.start,
+      damping: 0.2,
+      render: { visible: constrainVisibility },
+    });
+
+    // Right constraint anchored to a world point
+    const rightConstraint = Matter.Constraint.create({
+      pointA: anchorRight, // Fixed point in the world
+      bodyB: this.body,
+      pointB: { x: this.width, y: 0 },
+      stiffness: this.template.stiffnessRange.start,
+      damping: 0.2,
+      render: { visible: constrainVisibility },
+    });
+
+    this.constraints = [mainConstraint, leftConstraint, rightConstraint];
     World.add(world, this.constraints);
   }
 
@@ -94,30 +138,62 @@ class StemCell {
       this.age += 1;
       this.width += growIncrement;
 
-      // Scale the body to simulate growth
       Matter.Body.scale(this.body, 1 + growIncrement / this.width, 1);
 
-      // Gradually transition color and increase stiffness
       if (this.age >= intermediateIterations) {
         this.updateIntermediateState();
       }
 
-      // Update constraints periodically
       if (this.age % 4 === 0) {
         this.createConstraints();
       }
-    }, 2500 / timeControl);
+    }, 2500 + (this.branchDepth * 100 + this.generation * 10) / timeControl);
 
-    // Trigger cell division after 5 seconds
-    setTimeout(() => this.cellDivision(), 5000 / timeControl);
+    setTimeout(
+      () => this.cellDivision(),
+      (2500 + this.generation * 100 + this.branchDepth * 1000) / timeControl
+    );
+  }
+
+  cellDivision() {
+    if (this.branchDepth < this.template.maxDepth) {
+      const branchChance =
+        this.template.branchProbability(this.branchDepth) -
+        1 / (this.generation ^ 2);
+      if (Math.random() < branchChance) {
+        const angleOffset =
+          (Math.PI / 4 + this.generation / 50) * (Math.random() - 0.5); // Random small angle offset
+        const newGrowthAngle = this.growthAngle + angleOffset;
+
+        new StemCell(
+          WIDTH,
+          HEIGHT,
+          this,
+          newGrowthAngle,
+          this.branchDepth + 1,
+          this.template,
+          this.generation + 1
+        );
+      }
+    }
+
+    // Default continuation of the current branch
+    new StemCell(
+      WIDTH,
+      HEIGHT,
+      this,
+      this.growthAngle,
+      this.branchDepth,
+      this.template,
+      this.generation + 1
+    );
   }
 
   updateIntermediateState() {
-    // Gradually darken the green color and shift toward light brown
     const transitionRatio =
       (this.age - (maxIterations - transitionPeriod)) / transitionPeriod;
-    const startColor = { r: 107, g: 142, b: 35 }; // #6b8e23
-    const endColor = { r: 107, g: 51, b: 35 }; // #6b3323
+    const startColor = this.hexToRgb(this.template.transitionColors.start);
+    const endColor = this.hexToRgb(this.template.transitionColors.end);
 
     const currentColor = {
       r: Math.round(
@@ -133,33 +209,31 @@ class StemCell {
 
     this.body.render.fillStyle = `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`;
 
-    // Gradually increase stiffness toward 1.0
-    const newStiffness = 0.6 + 0.4 * transitionRatio; // Start at 0.5, end at 1.0
+    const stiffnessRange = this.template.stiffnessRange;
+    const newStiffness =
+      stiffnessRange.start +
+      (stiffnessRange.end - stiffnessRange.start) * transitionRatio;
     this.updateConstraintsStiffness(newStiffness);
   }
 
   finalHarden() {
-    Body.setStatic(this.body, true); // Make the stem rigid
-    this.body.render.fillStyle = "#6b3323"; // Fully brown color
-    this.updateConstraintsStiffness(1.0); // Max stiffness
+    Body.setStatic(this.body, true);
+    this.body.render.fillStyle = this.template.transitionColors.end;
+    this.updateConstraintsStiffness(this.template.stiffnessRange.end);
   }
 
   updateConstraintsStiffness(newStiffness) {
-    // Adjust stiffness of all constraints
     this.constraints.forEach((constraint) => {
       constraint.stiffness = newStiffness;
     });
   }
 
-  cellDivision() {
-    const branchingChance = Math.random();
-    if (!this.isBranch && branchingChance < 0.1) {
-      // 30% chance to create a left or right branch
-      const branchDirection = Math.random() > 0.5 ? "left" : "right";
-      new StemCell(WIDTH, HEIGHT, this, true, branchDirection);
-    }
-
-    // Always grow the main stem
-    new StemCell(WIDTH, HEIGHT, this);
+  hexToRgb(hex) {
+    const bigint = parseInt(hex.replace("#", ""), 16);
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255,
+    };
   }
 }

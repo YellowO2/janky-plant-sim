@@ -38,7 +38,36 @@
       });
 
       const world = engine.world;
-      world.gravity.y = 0.05; // No gravity for branches
+      world.gravity.y = 0.1; // No gravity for branches
+
+      window.addEventListener("keydown", function (event) {
+        let handled = false;
+        if ((event.key = "p")) {
+          console.log("paused");
+          handled = true;
+          debugger; // 121 is the keyCode of F10
+        }
+      });
+
+      class Seed {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.body = Bodies.rectangle(x, y, 40, 8, {
+            isStatic: true,
+          });
+        }
+      }
+
+      const seed = new Seed(BASE.x, BASE.y);
+      World.add(world, seed.body);
+      // Initialize the Stem
+      const root = new StemCell(12, 8, seed);
+      Body.setStatic(root.body, true);
+      // Global wind settings
+      let windForce = { x: 0, y: 0 }; // Current wind force
+      const maxForce = 0.05; // Maximum wind strength
+      const windRadius = 60; // Effective radius of the "fan"
 
       // Add mouse control
       const mouse = Mouse.create(render.canvas);
@@ -51,33 +80,67 @@
           },
         },
       });
-
-      window.addEventListener("keydown", function (event) {
-        let handled = false;
-        if ((event.key = "p")) {
-          console.log("paused");
-          handled = true;
-          debugger; // 121 is the keyCode of F10
-        }
-      });
-
       World.add(world, mouseConstraint);
 
-      class Seed {
-        constructor(x, y) {
-          this.x = x;
-          this.y = y;
-          this.body = Bodies.rectangle(x, y, 40, 8, {
-            isStatic: true,
-          });
-        }
-      }
+      // Visualization particles for wind
+      const windVisualization = [];
 
-      const seed = new Seed(400, 500);
-      World.add(world, seed.body);
-      // Initialize the Stem
-      const root = new StemCell(12, 8, seed);
-      Body.setStatic(root.body, true);
+      // Update wind force based on mouse position
+      Matter.Events.on(mouseConstraint, "mousemove", (event) => {
+        const mousePosition = event.mouse.position;
+
+        // Add visualization for wind
+        windVisualization.push({
+          x: mousePosition.x,
+          y: mousePosition.y,
+          alpha: 1, // Opacity for fade-out
+          radius: windRadius,
+        });
+      });
+
+      // Apply wind force to nearby stems
+      Matter.Events.on(engine, "beforeUpdate", () => {
+        const mousePosition = mouse.position;
+
+        allStems.forEach((stem) => {
+          const stemPosition = stem.body.position;
+
+          // Calculate distance from mouse to stem
+          const dx = stemPosition.x - mousePosition.x;
+          const dy = stemPosition.y - mousePosition.y;
+          const distance = Math.sqrt(dx ** 2 + dy ** 2);
+
+          // Apply wind force if within the wind radius
+          if (distance <= windRadius) {
+            const strength = maxForce * (1 - distance / windRadius); // Strength decreases with distance
+            const force = {
+              x: strength * (dx / distance), // Normalized direction
+              y: strength * (dy / distance),
+            };
+            Matter.Body.applyForce(stem.body, stemPosition, force);
+          }
+        });
+
+        // Update and fade wind visualization particles
+        windVisualization.forEach((particle, index) => {
+          particle.alpha *= 0.95; // Gradual fade-out
+          if (particle.alpha < 0.1) windVisualization.splice(index, 1); // Remove invisible particles
+        });
+      });
+
+      // Render wind visualization
+      Matter.Events.on(render, "afterRender", () => {
+        const context = render.context;
+
+        windVisualization.forEach((particle) => {
+          context.beginPath();
+          context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+          context.strokeStyle = `rgba(135, 206, 250, ${particle.alpha})`; // Light blue fading out
+          context.lineWidth = 1;
+          context.stroke();
+          context.closePath();
+        });
+      });
 
       // Run the engine and renderer
       Engine.run(engine);
