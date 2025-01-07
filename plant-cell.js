@@ -2,7 +2,7 @@
 const GrowthTemplates = {
   tree: {
     maxDepth: 6,
-    branchProbability: (generation) => 0.1 - 0.1 / (generation + 1),
+    branchProbability: (generation) => 0.2 - 1.8 / (generation + 1),
     transitionColors: { start: "#6b8e23", end: "#6b3323" },
     stiffnessRange: { start: 0.05, end: 0.4 },
   },
@@ -23,8 +23,8 @@ const GrowthTemplates = {
 const SETTINGS = {
   timeControl: 10,
   dimensions: { width: 5, height: 2 },
-  growIncrement: 1,
-  maxIterations: 30,
+  growIncrement: 0.5,
+  maxIterations: 40,
   transitionRatio: 0.5,
   BASE_POSITION: { x: 600, y: 600 },
   constrainVisibility: false,
@@ -32,6 +32,7 @@ const SETTINGS = {
 };
 
 let allStems = [];
+let allLeaves = [];
 
 class StemCell {
   constructor(
@@ -128,7 +129,7 @@ class StemCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      render: { visible: SETTINGS.constrainVisibility },
+      // render: { visible: SETTINGS.constrainVisibility },
     });
   }
 
@@ -237,7 +238,9 @@ class StemCell {
   }
 
   cellReproduction() {
-    if (
+    if (this.generation == 5) {
+      // new LeaveCell(this);
+    } else if (
       this.branchDepth < this.template.maxDepth &&
       Math.random() < this.branchProbability()
     ) {
@@ -252,6 +255,7 @@ class StemCell {
         this.generation + 1
       );
     }
+    console.log("this called after leave");
     new StemCell(
       SETTINGS.dimensions.width,
       SETTINGS.dimensions.height,
@@ -273,16 +277,20 @@ class StemCell {
 
   calculateGrowthInterval() {
     return (
-      (2500 + (this.branchDepth * 1000 + this.generation * 10)) /
+      (3000 +
+        (this.branchDepth * this.generation * 500 + this.generation * 10)) /
       SETTINGS.timeControl
     );
   }
 
+  leafProbability() {
+    //TODO
+    return 1;
+  }
+
   calculateReproductionDelay() {
     return (
-      (2500 +
-        this.generation * 100 +
-        this.branchDepth * this.generation * 500) /
+      (2500 + this.generation * 20 + this.branchDepth * this.generation * 500) /
       SETTINGS.timeControl
     );
   }
@@ -296,16 +304,3 @@ class StemCell {
     };
   }
 }
-
-// class LeaveCell {
-//   constructor(x, y, parent) {
-//     this.parent = parent;
-//     this.body = Bodies.rectangle(x, y, 10, 10, {
-//       isStatic: false,
-//       // render: { visible: false },
-//     });
-
-//     World.add(world, this.body);
-//     allLeaves.push(this);
-//   }
-// }
