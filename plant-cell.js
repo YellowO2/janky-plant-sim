@@ -239,7 +239,7 @@ class StemCell {
 
   cellReproduction() {
     if (this.generation == 5) {
-      // new LeaveCell(this);
+      new LeaveCell(this);
     } else if (
       this.branchDepth < this.template.maxDepth &&
       Math.random() < this.branchProbability()
@@ -302,5 +302,83 @@ class StemCell {
       g: (bigint >> 8) & 255,
       b: bigint & 255,
     };
+  }
+}
+
+class LeaveCell {
+  constructor(parent) {
+    console.log("this called");
+    this.parent = parent;
+    const position = parent.calculatePosition();
+    this.constraints = [];
+    this.width = 5;
+
+    console.log("this called 2");
+
+    this.body = Bodies.circle(position.x + 8, position.y, 5, {
+      render: { fillStyle: "#ff0000" },
+      friction: 0.9,
+      frictionAir: 0.5,
+      restitution: 0.2,
+      collisionFilter: { group: parent.growthAngle === -1 },
+    });
+
+    World.add(world, this.body);
+    this.createConstraints();
+
+    allLeaves.push(this);
+    console.log("this called 3");
+  }
+
+  createConstraints() {
+    if (!this.parent) return;
+
+    this.constraints.forEach((constraint) => {
+      World.remove(world, constraint);
+    });
+
+    const mainConstraint = this.createMainConstraint();
+    const [leftConstraint, rightConstraint] = this.createAnchorConstraints();
+
+    this.constraints = [mainConstraint, leftConstraint, rightConstraint];
+    World.add(world, this.constraints);
+  }
+
+  createMainConstraint() {
+    return Matter.Constraint.create({
+      bodyA: this.parent.body,
+      bodyB: this.body,
+      pointA: { x: 0, y: 0 },
+      pointB: { x: 0, y: 0 },
+      stiffness: 1,
+      damping: 0.3,
+      render: { visible: SETTINGS.constrainVisibility },
+    });
+  }
+
+  createAnchorConstraints() {
+    const leftAnchor = {
+      x: this.body.position.x - 20 - this.width * 5,
+      y: SETTINGS.BASE_POSITION.y,
+    };
+    const rightAnchor = {
+      x: this.body.position.x + 20 + this.width * 5,
+      y: SETTINGS.BASE_POSITION.y,
+    };
+
+    const createAnchorConstraint = (anchor, offsetX) =>
+      Matter.Constraint.create({
+        pointA: anchor,
+        bodyB: this.body,
+        pointB: { x: offsetX, y: 0 },
+        stiffness: 0.8,
+        damping: 0.2,
+        render: { visible: SETTINGS.constrainVisibility },
+      });
+
+    return [
+      createAnchorConstraint(leftAnchor, -this.width),
+      createAnchorConstraint(rightAnchor, this.width),
+    ];
   }
 }
