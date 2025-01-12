@@ -18,7 +18,7 @@ let allStems = [];
 let allLeaves = [];
 
 class StemCell {
-  constructor(
+  constructor({
     width = SETTINGS.dimensions.width,
     height = SETTINGS.dimensions.height,
     parent = null,
@@ -26,9 +26,9 @@ class StemCell {
     branchDepth = 0,
     template = GrowthTemplates.tree,
     generation = 0,
-    segmentLength = 0
-  ) {
-    this.initializeProperties(
+    segmentLength = 0,
+  } = {}) {
+    this.initializeProperties({
       width,
       height,
       parent,
@@ -36,14 +36,14 @@ class StemCell {
       branchDepth,
       template,
       generation,
-      segmentLength
-    );
+      segmentLength,
+    });
     this.createBody();
     this.createConstraints();
     this.startGrowth();
   }
 
-  initializeProperties(
+  initializeProperties({
     width,
     height,
     parent,
@@ -51,8 +51,8 @@ class StemCell {
     branchDepth,
     template,
     generation,
-    segmentLength
-  ) {
+    segmentLength,
+  }) {
     this.age = 0;
     this.width = width;
     this.height = height;
@@ -223,44 +223,43 @@ class StemCell {
       Math.random() < this.branchProbability()
     ) {
       const angleOffset = this.calculateBranchAngleOffset();
-      new StemCell(
-        SETTINGS.dimensions.width,
-        SETTINGS.dimensions.height,
-        this,
-        this.growthAngle + angleOffset,
-        this.branchDepth + 1,
-        this.template,
-        this.generation + 1,
-        0
-      );
+
+      new StemCell({
+        width: SETTINGS.dimensions.width,
+        height: this.height,
+        parent: this,
+        growthAngle: this.growthAngle + angleOffset,
+        branchDepth: this.branchDepth + 1,
+        template: this.template,
+        generation: this.generation + 1,
+        segmentLength: 0,
+      });
     }
 
-    new StemCell(
-      SETTINGS.dimensions.width,
-      SETTINGS.dimensions.height,
-      this,
-      this.growthAngle,
-      this.branchDepth,
-      this.template,
-      this.generation + 1,
-      0
-    );
+    new StemCell({
+      width: SETTINGS.dimensions.width,
+      parent: this,
+      growthAngle: this.growthAngle,
+      branchDepth: this.branchDepth,
+      template: this.template,
+      generation: this.generation + 1,
+      segmentLength: 0,
+    });
   }
 
   cellReproduction() {
     if (this.segmentLength == 5) {
       new LeaveCell(this);
     } else {
-      new StemCell(
-        SETTINGS.dimensions.width,
-        SETTINGS.dimensions.height,
-        this,
-        this.growthAngle,
-        this.branchDepth,
-        this.template,
-        this.generation + 1,
-        this.segmentLength + 1
-      );
+      new StemCell({
+        width: SETTINGS.dimensions.width,
+        parent: this,
+        growthAngle: this.growthAngle,
+        branchDepth: this.branchDepth,
+        template: this.template,
+        generation: this.generation + 1,
+        segmentLength: this.segmentLength + 1,
+      });
     }
   }
 
