@@ -4,26 +4,78 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tree Growth with Matter.js</title>
-    <script src="./matterjs.min.js"></script>
+    <!-- <script src="./matterjs.min.js"></script> -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.12.0/matter.min.js"
+      integrity="sha512-SUHfb02jiMRJwVgSanT2JoGkbNlIN6YYSji7upZITAyeB5rFiJ90J0NLahmKzlDMod40PXSYSqWM0rH2zIV4Hg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="./matter-attractors.js"></script>
   </head>
   <body>
     <canvas id="canvas"></canvas>
+
+    <style>
+      body {
+        /* background: url("./background.png") no-repeat center center fixed;
+        background-size: cover; */
+      }
+
+      #canvas {
+        width: 100vw;
+        height: 100vh;
+        opacity: 0.5;
+      }
+    </style>
+
     <script src="./plant-cell.js"></script>
+    <script src="./renderer.js"></script>
 
     <script>
-      const { Engine, Render, World, Bodies, Mouse, MouseConstraint } = Matter;
+      const {
+        Engine,
+        Render,
+        World,
+        Bodies,
+        Body,
+        Mouse,
+        MouseConstraint,
+        Events,
+      } = Matter;
+
+      Matter.use("matter-attractors");
+
+      // Load background image
+      const backgroundImg = new Image();
+      backgroundImg.src = "./Dark Green and Cream Simple Background.png";
+
+      const SETTINGS = {
+        timeControl: 10,
+        dimensions: { width: 1, height: 2 },
+        growIncrement: 0.5,
+        maxIterations: 80,
+        transitionRatio: 0.5,
+        BASE_POSITION: {
+          x: window.innerWidth / 2,
+          y: window.innerHeight - window.innerHeight / 5,
+        },
+        constrainVisibility: false,
+        cellSpacing: 5,
+      };
 
       // Initialize engine and renderer
       const engine = Engine.create();
       const canvas = document.getElementById("canvas");
+
       const render = Render.create({
         canvas: canvas,
         engine: engine,
         options: {
-          width: 1000,
-          height: 1000,
+          width: window.innerWidth,
+          height: window.innerHeight,
           wireframes: false,
-          background: "#f0f0f0",
+          background: "transparent",
         },
       });
 
@@ -51,20 +103,11 @@
       // Initialize the root stem
       const rootStem = new StemCell(12, 8, seed);
 
-      // Add mouse control
-      const mouse = Mouse.create(render.canvas);
-      const mouseConstraint = MouseConstraint.create(engine, {
-        mouse: mouse,
-        constraint: {
-          stiffness: 0.2,
-          render: { visible: false },
-        },
-      });
-      World.add(world, mouseConstraint);
-
-      // Run engine and renderer
-      Engine.run(engine);
+      // ----- RUN ENGINE -----
+      Matter.Runner.run(engine);
       Render.run(render);
     </script>
+
+    <script src="./mouse.js"></script>
   </body>
 </html>

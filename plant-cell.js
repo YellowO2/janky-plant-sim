@@ -2,15 +2,9 @@
 const GrowthTemplates = {
   tree: {
     maxDepth: 6,
-    branchProbability: (generation) => 0.2 - 1.8 / (generation + 1),
-    transitionColors: { start: "#6b8e23", end: "#6b3323" },
-    stiffnessRange: { start: 0.05, end: 0.4 },
-  },
-  shrub: {
-    maxDepth: 3,
-    branchProbability: (depth) => 0.6 - 0.2 * depth,
-    transitionColors: { start: "#556b2f", end: "#8b4513" },
-    stiffnessRange: { start: 0.5, end: 0.8 },
+    branchProbability: (generation) => 0.5 - 10 / (generation + 1),
+    transitionColors: { start: "#66ba5b", end: "#4c4f46" },
+    stiffnessRange: { start: 0.2, end: 0.8 },
   },
   custom: {
     maxDepth: 4,
@@ -18,17 +12,6 @@ const GrowthTemplates = {
     transitionColors: { start: "#6b8e23", end: "#6b3323" },
     stiffnessRange: { start: 0.6, end: 0.8 },
   },
-};
-
-const SETTINGS = {
-  timeControl: 10,
-  dimensions: { width: 5, height: 2 },
-  growIncrement: 0.5,
-  maxIterations: 40,
-  transitionRatio: 0.5,
-  BASE_POSITION: { x: 600, y: 600 },
-  constrainVisibility: false,
-  cellSpacing: 8,
 };
 
 let allStems = [];
@@ -42,7 +25,8 @@ class StemCell {
     growthAngle = 0,
     branchDepth = 0,
     template = GrowthTemplates.tree,
-    generation = 0
+    generation = 0,
+    segmentLength = 0
   ) {
     this.initializeProperties(
       width,
@@ -51,7 +35,8 @@ class StemCell {
       growthAngle,
       branchDepth,
       template,
-      generation
+      generation,
+      segmentLength
     );
     this.createBody();
     this.createConstraints();
@@ -65,7 +50,8 @@ class StemCell {
     growthAngle,
     branchDepth,
     template,
-    generation
+    generation,
+    segmentLength
   ) {
     this.age = 0;
     this.width = width;
@@ -76,18 +62,18 @@ class StemCell {
     this.template = template;
     this.generation = generation;
     this.constraints = [];
+    this.segmentLength = segmentLength;
   }
 
   createBody() {
     const position = this.calculatePosition();
-    this.body = Bodies.rectangle(
+    this.body = Bodies.circle(
       position.x,
       position.y,
       this.width,
-      this.height,
+      // this.height,
       {
         render: { fillStyle: this.template.transitionColors.start },
-        friction: 0.9,
         frictionAir: 0.5,
         restitution: 0.2,
         collisionFilter: { group: this.growthAngle === -1 },
@@ -129,18 +115,18 @@ class StemCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      // render: { visible: SETTINGS.constrainVisibility },
+      render: { visible: SETTINGS.constrainVisibility },
     });
   }
 
   createAnchorConstraints() {
     const leftAnchor = {
       x: this.body.position.x - 20 - this.width * 5,
-      y: SETTINGS.BASE_POSITION.y,
+      y: this.body.position.y + 40,
     };
     const rightAnchor = {
       x: this.body.position.x + 20 + this.width * 5,
-      y: SETTINGS.BASE_POSITION.y,
+      y: this.body.position.y + 40,
     };
 
     const createAnchorConstraint = (anchor, offsetX) =>
@@ -168,7 +154,7 @@ class StemCell {
       }
       this.age++;
       this.expandStem();
-      if (this.age % 4 === 0) this.createConstraints();
+      // if (this.age % 4 === 0) this.createConstraints();
     }, this.calculateGrowthInterval());
 
     setTimeout(
@@ -179,13 +165,7 @@ class StemCell {
 
   expandStem() {
     this.width += SETTINGS.growIncrement;
-    Matter.Body.scale(this.body, 1 + SETTINGS.growIncrement / this.width, 1);
-    if (
-      this.age >=
-      this.calculateCellMaxIterations() * SETTINGS.transitionPeriod
-    ) {
-      this.updateIntermediateState();
-    }
+    this.updateIntermediateState();
   }
 
   updateIntermediateState() {
@@ -196,31 +176,28 @@ class StemCell {
 
   calculateCellMaxIterations() {
     return (
-      SETTINGS.maxIterations - this.generation * 0.5 - this.branchDepth * 5
+      SETTINGS.maxIterations - this.generation * 0.5 - this.branchDepth * 4
     );
   }
 
   calculateTransitionRatio() {
-    return SETTINGS.transitionRatio;
+    // Clamp the ratio between 0 and 1
+    return Math.min(
+      Math.max(this.age / this.calculateCellMaxIterations(), 0),
+      1
+    );
   }
 
   updateColor(transitionRatio) {
-    const { start, end } = this.template.transitionColors;
+    const { start, end } = GrowthTemplates.tree.transitionColors;
     const startRgb = this.hexToRgb(start);
     const endRgb = this.hexToRgb(end);
-    this.body.render.fillStyle = `rgb(${this.interpolateColor(
-      startRgb,
-      endRgb,
-      transitionRatio
-    )})`;
-  }
-
-  interpolateColor(start, end, ratio) {
-    return {
-      r: Math.round(start.r + (end.r - start.r) * ratio),
-      g: Math.round(start.g + (end.g - start.g) * ratio),
-      b: Math.round(start.b + (end.b - start.b) * ratio),
+    const rgb = {
+      r: Math.round(startRgb.r + (endRgb.r - startRgb.r) * transitionRatio),
+      g: Math.round(startRgb.g + (endRgb.g - startRgb.g) * transitionRatio),
+      b: Math.round(startRgb.b + (endRgb.b - startRgb.b) * transitionRatio),
     };
+    this.body.render.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
   }
 
   updateConstraintsStiffness(transitionRatio) {
@@ -233,14 +210,15 @@ class StemCell {
 
   finalizeGrowth() {
     Matter.Body.setStatic(this.body, true);
-    this.body.render.fillStyle = this.template.transitionColors.end;
-    this.updateConstraintsStiffness(1);
+    // this.body.render.fillStyle = this.template.transitionColors.end;
+    // this.updateConstraintsStiffness(1);
+    this.constraints.forEach((constraint) => {
+      World.remove(world, constraint);
+    });
   }
 
-  cellReproduction() {
-    if (this.generation == 5) {
-      new LeaveCell(this);
-    } else if (
+  growNewSegment() {
+    if (
       this.branchDepth < this.template.maxDepth &&
       Math.random() < this.branchProbability()
     ) {
@@ -252,10 +230,11 @@ class StemCell {
         this.growthAngle + angleOffset,
         this.branchDepth + 1,
         this.template,
-        this.generation + 1
+        this.generation + 1,
+        0
       );
     }
-    console.log("this called after leave");
+
     new StemCell(
       SETTINGS.dimensions.width,
       SETTINGS.dimensions.height,
@@ -263,8 +242,26 @@ class StemCell {
       this.growthAngle,
       this.branchDepth,
       this.template,
-      this.generation + 1
+      this.generation + 1,
+      0
     );
+  }
+
+  cellReproduction() {
+    if (this.segmentLength == 5) {
+      new LeaveCell(this);
+    } else {
+      new StemCell(
+        SETTINGS.dimensions.width,
+        SETTINGS.dimensions.height,
+        this,
+        this.growthAngle,
+        this.branchDepth,
+        this.template,
+        this.generation + 1,
+        this.segmentLength + 1
+      );
+    }
   }
 
   branchProbability() {
@@ -276,11 +273,7 @@ class StemCell {
   }
 
   calculateGrowthInterval() {
-    return (
-      (3000 +
-        (this.branchDepth * this.generation * 500 + this.generation * 10)) /
-      SETTINGS.timeControl
-    );
+    return 10000 + (this.branchDepth * 50) / SETTINGS.timeControl;
   }
 
   leafProbability() {
@@ -290,7 +283,7 @@ class StemCell {
 
   calculateReproductionDelay() {
     return (
-      (2500 + this.generation * 20 + this.branchDepth * this.generation * 500) /
+      (2500 + this.generation * 100 + this.branchDepth * this.generation * 10) /
       SETTINGS.timeControl
     );
   }
@@ -313,8 +306,6 @@ class LeaveCell {
     this.constraints = [];
     this.width = 5;
 
-    console.log("this called 2");
-
     this.body = Bodies.circle(position.x + 8, position.y, 5, {
       render: { fillStyle: "#ff0000" },
       friction: 0.9,
@@ -328,6 +319,8 @@ class LeaveCell {
 
     allLeaves.push(this);
     console.log("this called 3");
+
+    this.growNewSegment();
   }
 
   createConstraints() {
@@ -380,5 +373,9 @@ class LeaveCell {
       createAnchorConstraint(leftAnchor, -this.width),
       createAnchorConstraint(rightAnchor, this.width),
     ];
+  }
+
+  growNewSegment() {
+    this.parent.growNewSegment();
   }
 }
