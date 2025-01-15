@@ -1,30 +1,52 @@
 // plant-cell.js
-const GrowthTemplates = {
-  tree: {
-    maxDepth: 4,
-    branchProbability: (generation) => 0.5 - 5 / (generation + 1),
-    transitionColors: { start: "#66ba5b", end: "#4c4f46" },
-    stiffnessRange: { start: 0.2, end: 0.8 },
+
+const SIMULATION_SETTINGS = {
+  timeControl: 10,
+  BASE_POSITION: {
+    x: window.innerWidth / 2,
+    y: window.innerHeight - window.innerHeight / 5,
   },
-  custom: {
-    maxDepth: 4,
-    branchProbability: (depth) => 0.2 - 0.05 * depth,
-    transitionColors: { start: "#6b8e23", end: "#6b3323" },
-    stiffnessRange: { start: 0.6, end: 0.8 },
+  cellSpacing: 10,
+};
+
+const PLANT_PARAMETERS = {
+  dimensions: { width: 1, height: 2 },
+  growIncrement: 0.5,
+  maxIterations: 80,
+  branchProbabilityAdjustment: 0.05,
+  templates: {
+    tree: {
+      maxDepth: 4,
+      branchProbability: (generation) => 0.5 - 5 / (generation + 1),
+      transitionColors: { start: "#66ba5b", end: "#4c4f46" },
+      stiffnessRange: { start: 0.2, end: 0.8 },
+    },
+    custom: {
+      maxDepth: 4,
+      branchProbability: (depth) => 0.2 - 0.05 * depth,
+      transitionColors: { start: "#6b8e23", end: "#6b3323" },
+      stiffnessRange: { start: 0.6, end: 0.8 },
+    },
   },
 };
+
+const DISPLAY_SETTINGS = {
+  constrainVisibility: false,
+
+};
+
 
 let allStems = [];
 let allLeaves = [];
 
 class StemCell {
   constructor({
-    width = SETTINGS.dimensions.width,
-    height = SETTINGS.dimensions.height,
+    width = PLANT_PARAMETERS.dimensions.width,
+    height = PLANT_PARAMETERS.dimensions.height,
     parent = null,
     growthAngle = 0,
     branchDepth = 0,
-    template = GrowthTemplates.tree,
+    template = PLANT_PARAMETERS.templates.tree,
     generation = 0,
     segmentLength = 0,
   } = {}) {
@@ -86,7 +108,7 @@ class StemCell {
   calculatePosition() {
     const parentPos = this.parent
       ? this.parent.body.position
-      : SETTINGS.BASE_POSITION;
+      : SIMULATION_SETTINGS.BASE_POSITION;
     return {
       x: parentPos.x + Math.sin(this.growthAngle) * SETTINGS.cellSpacing,
       y: parentPos.y - Math.cos(this.growthAngle) * SETTINGS.cellSpacing,
@@ -115,7 +137,7 @@ class StemCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      render: { visible: SETTINGS.constrainVisibility },
+      render: { visible: DISPLAY_SETTINGS.constrainVisibility },
     });
   }
 
@@ -136,7 +158,7 @@ class StemCell {
         pointB: { x: offsetX, y: 0 },
         stiffness: this.template.stiffnessRange.start,
         damping: 0.2,
-        render: { visible: SETTINGS.constrainVisibility },
+        render: { visible: DISPLAY_SETTINGS.constrainVisibility },
       });
 
     return [
@@ -164,7 +186,7 @@ class StemCell {
   }
 
   expandStem() {
-    this.width += SETTINGS.growIncrement;
+    this.width += PLANT_PARAMETERS.growIncrement;
     this.updateIntermediateState();
   }
 
@@ -176,7 +198,7 @@ class StemCell {
 
   calculateCellMaxIterations() {
     return (
-      SETTINGS.maxIterations - this.generation * 0.5 - this.branchDepth * 4
+      PLANT_PARAMETERS.maxIterations - this.generation * 0.5 - this.branchDepth * 4
     );
   }
 
@@ -189,7 +211,7 @@ class StemCell {
   }
 
   updateColor(transitionRatio) {
-    const { start, end } = GrowthTemplates.tree.transitionColors;
+    const { start, end } = PLANT_PARAMETERS.templates.tree.transitionColors;
     const startRgb = this.hexToRgb(start);
     const endRgb = this.hexToRgb(end);
     const rgb = {
@@ -225,7 +247,7 @@ class StemCell {
       const angleOffset = this.calculateBranchAngleOffset();
 
       new StemCell({
-        width: SETTINGS.dimensions.width,
+        width: PLANT_PARAMETERS.dimensions.width,
         height: this.height,
         parent: this,
         growthAngle: this.growthAngle + angleOffset,
@@ -237,7 +259,7 @@ class StemCell {
     }
 
     new StemCell({
-      width: SETTINGS.dimensions.width,
+      width: PLANT_PARAMETERS.dimensions.width,
       parent: this,
       growthAngle: this.growthAngle,
       branchDepth: this.branchDepth,
@@ -252,7 +274,7 @@ class StemCell {
       new LeaveCell(this);
     } else {
       new StemCell({
-        width: SETTINGS.dimensions.width,
+        width: PLANT_PARAMETERS.dimensions.width,
         parent: this,
         growthAngle: this.growthAngle,
         branchDepth: this.branchDepth,
@@ -277,7 +299,7 @@ class StemCell {
   }
 
   calculateGrowthInterval() {
-    return 10000 + (this.branchDepth * 50) / SETTINGS.timeControl;
+    return 10000 + (this.branchDepth * 50) / SIMULATION_SETTINGS.timeControl;
   }
 
   leafProbability() {
@@ -288,7 +310,7 @@ class StemCell {
   calculateReproductionDelay() {
     return (
       (2500 + this.generation * 100 + this.branchDepth * this.generation * 10) /
-      SETTINGS.timeControl
+      SIMULATION_SETTINGS.timeControl
     );
   }
 
@@ -349,18 +371,18 @@ class LeaveCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      render: { visible: SETTINGS.constrainVisibility },
+      render: { visible: DISPLAY_SETTINGS.constrainVisibility },
     });
   }
 
   createAnchorConstraints() {
     const leftAnchor = {
       x: this.body.position.x - 20 - this.radius * 5,
-      y: SETTINGS.BASE_POSITION.y,
+      y: SIMULATION_SETTINGS.BASE_POSITION.y,
     };
     const rightAnchor = {
       x: this.body.position.x + 20 + this.radius * 5,
-      y: SETTINGS.BASE_POSITION.y,
+      y: SIMULATION_SETTINGS.BASE_POSITION.y,
     };
 
     const createAnchorConstraint = (anchor, offsetX) =>
@@ -370,7 +392,7 @@ class LeaveCell {
         pointB: { x: offsetX, y: 0 },
         stiffness: 0.8,
         damping: 0.2,
-        render: { visible: SETTINGS.constrainVisibility },
+        render: { visible: DISPLAY_SETTINGS.constrainVisibility },
       });
 
     return [
