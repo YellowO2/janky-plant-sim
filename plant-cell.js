@@ -1,141 +1,22 @@
 // plant-cell.js
-const SIMULATION_SETTINGS = {
-  timeControl: 10,
-  BASE_POSITION: {
-    x: window.innerWidth / 2,
-    y: window.innerHeight - window.innerHeight / 5,
-  },
-  cellSpacing: 10,
-};
-
-const PLANT_PARAMETERS = {
-  dimensions: { width: 1, height: 2 },
-  growIncrement: 0.5,
-  maxIterations: 80,
-  branchProbabilityAdjustment: 0.05,
-  templates: {
-    tree: {
-      maxDepth: 4,
-      branchProbability: (generation) => 0.5 - 5 / (generation + 1),
-      transitionColors: { start: "#66ba5b", end: "#4c4f46" },
-      stiffnessRange: { start: 0.2, end: 0.8 },
-    },
-    custom: {
-      maxDepth: 4,
-      branchProbability: (depth) => 0.2 - 0.05 * depth,
-      transitionColors: { start: "#6b8e23", end: "#6b3323" },
-      stiffnessRange: { start: 0.6, end: 0.8 },
-    },
-  },
-};
-
-const DISPLAY_SETTINGS = {
-  constrainVisibility: false,
-  renderSkin: true,
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const timeControlSlider = document.getElementById("timeControlSlider");
-  const cellSpacingSlider = document.getElementById("cellSpacingSlider");
-  const growIncrementSlider = document.getElementById("growIncrementSlider");
-  const templateSelect = document.getElementById("templateSelect");
-  const startButton = document.getElementById("startButton");
-  const constrainVisibilityToggle = document.getElementById(
-    "constrainVisibilityToggle"
-  );
-
-  let growthStarted = false;
-
-  // Set initial values from settings
-  timeControlSlider.value = SIMULATION_SETTINGS.timeControl;
-  cellSpacingSlider.value = SIMULATION_SETTINGS.cellSpacing;
-  growIncrementSlider.value = PLANT_PARAMETERS.growIncrement;
-  templateSelect.value = "tree";
-  constrainVisibilityToggle.checked = DISPLAY_SETTINGS.constrainVisibility;
-
-  // Function to update SIMULATION_SETTINGS and PLANT_PARAMETERS
-  function updateSettings() {
-    SIMULATION_SETTINGS.timeControl = parseInt(timeControlSlider.value, 10);
-    SIMULATION_SETTINGS.cellSpacing = parseInt(cellSpacingSlider.value, 10);
-    PLANT_PARAMETERS.growIncrement = parseFloat(growIncrementSlider.value);
-    DISPLAY_SETTINGS.constrainVisibility = constrainVisibilityToggle.checked;
-
-    console.log("Updated Settings:", {
-      SIMULATION_SETTINGS,
-      PLANT_PARAMETERS,
-      DISPLAY_SETTINGS,
-    });
-  }
-
-  // Lock pre-growth settings when growth starts
-  startButton.addEventListener("click", () => {
-    if (!growthStarted) {
-      growthStarted = true;
-      setPreGrowthSettingsLocked(true);
-      startButton.textContent = "Growth In Progress";
-      startButton.disabled = true; // Optional: Disable start button during growth
-
-      // Seed initialization
-      class Seed {
-        constructor(x, y) {
-          this.body = Bodies.rectangle(x, y, 40, 8, { isStatic: true });
-          World.add(world, this.body);
-        }
-      }
-
-      const seed = new Seed(
-        SIMULATION_SETTINGS.BASE_POSITION.x,
-        SIMULATION_SETTINGS.BASE_POSITION.y
-      );
-
-      // Initialize the root stem
-      const rootStem = new StemCell({ parent: seed });
-    }
-  });
-
-  // Update DISPLAY_SETTINGS and other real-time
-  constrainVisibilityToggle.addEventListener("change", updateSettings);
-
-  // Function to lock/unlock pre-growth settings
-  function setPreGrowthSettingsLocked(locked) {
-    timeControlSlider.disabled = locked;
-    cellSpacingSlider.disabled = locked;
-    growIncrementSlider.disabled = locked;
-    templateSelect.disabled = locked;
-  }
-
-  // Sync values on user input
-  [timeControlSlider, cellSpacingSlider, growIncrementSlider].forEach(
-    (slider) => {
-      slider.addEventListener("input", updateSettings);
-    }
-  );
-
-  // Handle plant template selection
-  templateSelect.addEventListener("change", () => {
-    const selectedTemplate = templateSelect.value;
-    console.log("Selected Template:", selectedTemplate);
-    updateSettings();
-  });
-});
 
 let allStems = [];
 let allLeaves = [];
 
 class StemCell {
   constructor({
-    width = PLANT_PARAMETERS.dimensions.width,
-    height = PLANT_PARAMETERS.dimensions.height,
+    width = 1,
     parent = null,
     growthAngle = 0,
     branchDepth = 0,
-    template = PLANT_PARAMETERS.templates.tree,
+    template = settingsManager.getSettings().simulation.plantTemplate === "tree"
+      ? TEMPLATES.tree
+      : TEMPLATES.custom,
     generation = 0,
     segmentLength = 0,
   } = {}) {
     this.initializeProperties({
       width,
-      height,
       parent,
       growthAngle,
       branchDepth,
@@ -150,7 +31,6 @@ class StemCell {
 
   initializeProperties({
     width,
-    height,
     parent,
     growthAngle,
     branchDepth,
@@ -160,7 +40,6 @@ class StemCell {
   }) {
     this.age = 0;
     this.width = width;
-    this.height = height;
     this.parent = parent;
     this.growthAngle = growthAngle;
     this.branchDepth = branchDepth;
@@ -172,18 +51,12 @@ class StemCell {
 
   createBody() {
     const position = this.calculatePosition();
-    this.body = Bodies.circle(
-      position.x,
-      position.y,
-      this.width,
-      // this.height,
-      {
-        render: { fillStyle: this.template.transitionColors.start },
-        frictionAir: 0.5,
-        restitution: 0.2,
-        collisionFilter: { group: this.growthAngle === -1 },
-      }
-    );
+    this.body = Bodies.circle(position.x, position.y, this.width, {
+      render: { fillStyle: this.template.transitionColors.start },
+      frictionAir: 0.5,
+      restitution: 0.2,
+      collisionFilter: { group: this.growthAngle === -1 },
+    });
     World.add(world, this.body);
     allStems.push(this);
   }
@@ -191,14 +64,19 @@ class StemCell {
   calculatePosition() {
     const parentPos = this.parent
       ? this.parent.body.position
-      : SIMULATION_SETTINGS.BASE_POSITION;
+      : {
+          x: window.innerWidth / 2,
+          y: window.innerHeight - window.innerHeight / 5,
+        };
     return {
       x:
         parentPos.x +
-        Math.sin(this.growthAngle) * SIMULATION_SETTINGS.cellSpacing,
+        Math.sin(this.growthAngle) *
+          settingsManager.getSettings().simulation.cellSpacing,
       y:
         parentPos.y -
-        Math.cos(this.growthAngle) * SIMULATION_SETTINGS.cellSpacing,
+        Math.cos(this.growthAngle) *
+          settingsManager.getSettings().simulation.cellSpacing,
     };
   }
 
@@ -224,7 +102,9 @@ class StemCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      render: { visible: DISPLAY_SETTINGS.constrainVisibility },
+      render: {
+        visible: settingsManager.getSettings().display.constrainVisibility,
+      },
     });
   }
 
@@ -245,7 +125,9 @@ class StemCell {
         pointB: { x: offsetX, y: 0 },
         stiffness: this.template.stiffnessRange.start,
         damping: 0.2,
-        render: { visible: DISPLAY_SETTINGS.constrainVisibility },
+        render: {
+          visible: settingsManager.getSettings().display.constrainVisibility,
+        },
       });
 
     return [
@@ -263,7 +145,6 @@ class StemCell {
       }
       this.age++;
       this.expandStem();
-      // if (this.age % 4 === 0) this.createConstraints();
     }, this.calculateGrowthInterval());
 
     setTimeout(
@@ -273,8 +154,32 @@ class StemCell {
   }
 
   expandStem() {
-    this.width += PLANT_PARAMETERS.growIncrement;
+    this.width += settingsManager.getSettings().simulation.growIncrement;
     this.updateIntermediateState();
+  }
+
+  calculateGrowthInterval() {
+    return (
+      10000 +
+      (this.branchDepth * 50) /
+        settingsManager.getSettings().simulation.timeControl
+    );
+  }
+
+  calculateReproductionDelay() {
+    return (
+      (2500 + this.generation * 100 + this.branchDepth * this.generation * 10) /
+      settingsManager.getSettings().simulation.timeControl
+    );
+  }
+
+  hexToRgb(hex) {
+    const bigint = parseInt(hex.replace("#", ""), 16);
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255,
+    };
   }
 
   updateIntermediateState() {
@@ -285,7 +190,7 @@ class StemCell {
 
   calculateCellMaxIterations() {
     return (
-      PLANT_PARAMETERS.maxIterations -
+      settingsManager.getSettings().simulation.maxIterations -
       this.generation * 0.5 -
       this.branchDepth * 4
     );
@@ -300,7 +205,7 @@ class StemCell {
   }
 
   updateColor(transitionRatio) {
-    const { start, end } = PLANT_PARAMETERS.templates.tree.transitionColors;
+    const { start, end } = TEMPLATES.tree.transitionColors;
     const startRgb = this.hexToRgb(start);
     const endRgb = this.hexToRgb(end);
     const rgb = {
@@ -336,8 +241,7 @@ class StemCell {
       const angleOffset = this.calculateBranchAngleOffset();
 
       new StemCell({
-        width: PLANT_PARAMETERS.dimensions.width,
-        height: this.height,
+        width: settingsManager.getSettings().simulation.cellSize,
         parent: this,
         growthAngle: this.growthAngle + angleOffset,
         branchDepth: this.branchDepth + 1,
@@ -348,7 +252,7 @@ class StemCell {
     }
 
     new StemCell({
-      width: PLANT_PARAMETERS.dimensions.width,
+      width: settingsManager.getSettings().simulation.cellSize,
       parent: this,
       growthAngle: this.growthAngle,
       branchDepth: this.branchDepth,
@@ -363,7 +267,7 @@ class StemCell {
       new LeaveCell(this);
     } else {
       new StemCell({
-        width: PLANT_PARAMETERS.dimensions.width,
+        width: settingsManager.getSettings().simulation.cellSize,
         parent: this,
         growthAngle: this.growthAngle,
         branchDepth: this.branchDepth,
@@ -387,29 +291,9 @@ class StemCell {
     }
   }
 
-  calculateGrowthInterval() {
-    return 10000 + (this.branchDepth * 50) / SIMULATION_SETTINGS.timeControl;
-  }
-
   leafProbability() {
     //TODO
     return 1;
-  }
-
-  calculateReproductionDelay() {
-    return (
-      (2500 + this.generation * 100 + this.branchDepth * this.generation * 10) /
-      SIMULATION_SETTINGS.timeControl
-    );
-  }
-
-  hexToRgb(hex) {
-    const bigint = parseInt(hex.replace("#", ""), 16);
-    return {
-      r: (bigint >> 16) & 255,
-      g: (bigint >> 8) & 255,
-      b: bigint & 255,
-    };
   }
 }
 
@@ -460,18 +344,18 @@ class LeaveCell {
       pointB: { x: 0, y: 0 },
       stiffness: 1,
       damping: 0.3,
-      render: { visible: DISPLAY_SETTINGS.constrainVisibility },
+      render: { visible: false },
     });
   }
 
   createAnchorConstraints() {
     const leftAnchor = {
       x: this.body.position.x - 20 - this.radius * 5,
-      y: SIMULATION_SETTINGS.BASE_POSITION.y,
+      y: this.body.position.y + 4,
     };
     const rightAnchor = {
       x: this.body.position.x + 20 + this.radius * 5,
-      y: SIMULATION_SETTINGS.BASE_POSITION.y,
+      y: this.body.position.y + 4,
     };
 
     const createAnchorConstraint = (anchor, offsetX) =>
@@ -481,7 +365,7 @@ class LeaveCell {
         pointB: { x: offsetX, y: 0 },
         stiffness: 0.8,
         damping: 0.2,
-        render: { visible: DISPLAY_SETTINGS.constrainVisibility },
+        render: { visible: false },
       });
 
     return [
