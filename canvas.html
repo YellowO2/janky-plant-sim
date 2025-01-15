@@ -11,10 +11,43 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="./matter-attractors.js"></script>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+  <div class="container mt-4">
+    <h2>Pre-Growth Settings</h2>
+
+    <!-- Simulation Settings -->
+    <label for="timeControlSlider" class="form-label">Time Control</label>
+    <input type="range" class="form-range" min="1" max="100" step="1" id="timeControlSlider" value="10" disabled>
+
+    <label for="cellSpacingSlider" class="form-label">Cell Spacing</label>
+    <input type="range" class="form-range" min="1" max="50" step="1" id="cellSpacingSlider" value="10" disabled>
+
+    <label for="growIncrementSlider" class="form-label">Grow Increment</label>
+    <input type="range" class="form-range" min="0.1" max="5" step="0.1" id="growIncrementSlider" value="0.5" disabled>
+
+    <label for="templateSelect" class="form-label">Plant Template</label>
+    <select class="form-select" id="templateSelect" disabled>
+      <option value="tree" selected>Tree</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <!-- Start Button -->
+    <button id="startButton" class="btn btn-primary mt-3">Start Growth</button>
+
+    <h2 class="mt-5">Real-Time Display Settings</h2>
+
+    <!-- Display Settings -->
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="constrainVisibilityToggle" checked>
+      <label class="form-check-label" for="constrainVisibilityToggle">Constrain Visibility</label>
+    </div>
+  </div>
+
+
+  <canvas id="canvas"></canvas>
 
     <style>
       body {
@@ -30,6 +63,12 @@
         height: 100vh;
         opacity: 0.5;
       }
+
+      .container {
+        position: relative;
+        z-index: 10;
+      }
+
     </style>
 
     <script src="./plant-cell.js"></script>
@@ -52,20 +91,6 @@
       // Load background image
       const backgroundImg = new Image();
       backgroundImg.src = "./Dark Green and Cream Simple Background.png";
-
-      const SETTINGS = {
-        timeControl: 10,
-        dimensions: { width: 1, height: 2 },
-        growIncrement: 0.5,
-        maxIterations: 80,
-        transitionRatio: 0.5,
-        BASE_POSITION: {
-          x: window.innerWidth / 2,
-          y: window.innerHeight - window.innerHeight / 5,
-        },
-        constrainVisibility: false,
-        cellSpacing: 5,
-      };
 
       // Initialize engine and renderer
       const engine = Engine.create();
@@ -93,18 +118,6 @@
         }
       });
 
-      // Seed initialization
-      class Seed {
-        constructor(x, y) {
-          this.body = Bodies.rectangle(x, y, 40, 8, { isStatic: true });
-          World.add(world, this.body);
-        }
-      }
-
-      const seed = new Seed(SETTINGS.BASE_POSITION.x, SETTINGS.BASE_POSITION.y);
-
-      // Initialize the root stem
-      const rootStem = new StemCell(12, 8, seed);
 
       // ----- RUN ENGINE -----
       Matter.Runner.run(engine);

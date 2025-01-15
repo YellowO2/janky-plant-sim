@@ -1,5 +1,4 @@
 // plant-cell.js
-
 const SIMULATION_SETTINGS = {
   timeControl: 10,
   BASE_POSITION: {
@@ -32,9 +31,93 @@ const PLANT_PARAMETERS = {
 
 const DISPLAY_SETTINGS = {
   constrainVisibility: false,
-
+  renderSkin: true,
 };
 
+document.addEventListener("DOMContentLoaded", () => {
+  const timeControlSlider = document.getElementById("timeControlSlider");
+  const cellSpacingSlider = document.getElementById("cellSpacingSlider");
+  const growIncrementSlider = document.getElementById("growIncrementSlider");
+  const templateSelect = document.getElementById("templateSelect");
+  const startButton = document.getElementById("startButton");
+  const constrainVisibilityToggle = document.getElementById(
+    "constrainVisibilityToggle"
+  );
+
+  let growthStarted = false;
+
+  // Set initial values from settings
+  timeControlSlider.value = SIMULATION_SETTINGS.timeControl;
+  cellSpacingSlider.value = SIMULATION_SETTINGS.cellSpacing;
+  growIncrementSlider.value = PLANT_PARAMETERS.growIncrement;
+  templateSelect.value = "tree";
+  constrainVisibilityToggle.checked = DISPLAY_SETTINGS.constrainVisibility;
+
+  // Function to update SIMULATION_SETTINGS and PLANT_PARAMETERS
+  function updateSettings() {
+    SIMULATION_SETTINGS.timeControl = parseInt(timeControlSlider.value, 10);
+    SIMULATION_SETTINGS.cellSpacing = parseInt(cellSpacingSlider.value, 10);
+    PLANT_PARAMETERS.growIncrement = parseFloat(growIncrementSlider.value);
+    DISPLAY_SETTINGS.constrainVisibility = constrainVisibilityToggle.checked;
+
+    console.log("Updated Settings:", {
+      SIMULATION_SETTINGS,
+      PLANT_PARAMETERS,
+      DISPLAY_SETTINGS,
+    });
+  }
+
+  // Lock pre-growth settings when growth starts
+  startButton.addEventListener("click", () => {
+    if (!growthStarted) {
+      growthStarted = true;
+      setPreGrowthSettingsLocked(true);
+      startButton.textContent = "Growth In Progress";
+      startButton.disabled = true; // Optional: Disable start button during growth
+
+      // Seed initialization
+      class Seed {
+        constructor(x, y) {
+          this.body = Bodies.rectangle(x, y, 40, 8, { isStatic: true });
+          World.add(world, this.body);
+        }
+      }
+
+      const seed = new Seed(
+        SIMULATION_SETTINGS.BASE_POSITION.x,
+        SIMULATION_SETTINGS.BASE_POSITION.y
+      );
+
+      // Initialize the root stem
+      const rootStem = new StemCell({ parent: seed });
+    }
+  });
+
+  // Update DISPLAY_SETTINGS and other real-time
+  constrainVisibilityToggle.addEventListener("change", updateSettings);
+
+  // Function to lock/unlock pre-growth settings
+  function setPreGrowthSettingsLocked(locked) {
+    timeControlSlider.disabled = locked;
+    cellSpacingSlider.disabled = locked;
+    growIncrementSlider.disabled = locked;
+    templateSelect.disabled = locked;
+  }
+
+  // Sync values on user input
+  [timeControlSlider, cellSpacingSlider, growIncrementSlider].forEach(
+    (slider) => {
+      slider.addEventListener("input", updateSettings);
+    }
+  );
+
+  // Handle plant template selection
+  templateSelect.addEventListener("change", () => {
+    const selectedTemplate = templateSelect.value;
+    console.log("Selected Template:", selectedTemplate);
+    updateSettings();
+  });
+});
 
 let allStems = [];
 let allLeaves = [];
@@ -110,8 +193,12 @@ class StemCell {
       ? this.parent.body.position
       : SIMULATION_SETTINGS.BASE_POSITION;
     return {
-      x: parentPos.x + Math.sin(this.growthAngle) * SETTINGS.cellSpacing,
-      y: parentPos.y - Math.cos(this.growthAngle) * SETTINGS.cellSpacing,
+      x:
+        parentPos.x +
+        Math.sin(this.growthAngle) * SIMULATION_SETTINGS.cellSpacing,
+      y:
+        parentPos.y -
+        Math.cos(this.growthAngle) * SIMULATION_SETTINGS.cellSpacing,
     };
   }
 
@@ -198,7 +285,9 @@ class StemCell {
 
   calculateCellMaxIterations() {
     return (
-      PLANT_PARAMETERS.maxIterations - this.generation * 0.5 - this.branchDepth * 4
+      PLANT_PARAMETERS.maxIterations -
+      this.generation * 0.5 -
+      this.branchDepth * 4
     );
   }
 
