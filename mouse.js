@@ -27,8 +27,8 @@ var attractiveBody = Bodies.circle(
       attractors: [
         function (bodyA, bodyB) {
           return {
-            x: (bodyA.position.x - bodyB.position.x) * 1e-7,
-            y: (bodyA.position.y - bodyB.position.y) * 1e-7,
+            x: (bodyA.position.x - bodyB.position.x) * 1e-7 * 0.1,
+            y: (bodyA.position.y - bodyB.position.y) * 1e-7 * 0.1,
           };
         },
       ],

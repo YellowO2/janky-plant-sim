@@ -23,6 +23,9 @@
       }
 
       #canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100vw;
         height: 100vh;
         opacity: 0.5;
@@ -80,7 +83,7 @@
       });
 
       const world = engine.world;
-      world.gravity.y = 0.1; // Gravity for branches
+      world.gravity.y = 0.5; // Gravity for branches
 
       // Pause functionality
       window.addEventListener("keydown", (event) => {

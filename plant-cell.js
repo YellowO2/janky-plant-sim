@@ -1,8 +1,8 @@
 // plant-cell.js
 const GrowthTemplates = {
   tree: {
-    maxDepth: 6,
-    branchProbability: (generation) => 0.5 - 10 / (generation + 1),
+    maxDepth: 4,
+    branchProbability: (generation) => 0.5 - 5 / (generation + 1),
     transitionColors: { start: "#66ba5b", end: "#4c4f46" },
     stiffnessRange: { start: 0.2, end: 0.8 },
   },
@@ -268,7 +268,12 @@ class StemCell {
   }
 
   calculateBranchAngleOffset() {
-    return (Math.PI / 4 + this.generation / 50) * (Math.random() - 0.5);
+    const goldenAngle = 1.19998161486; // ~137.5 degrees
+    if (Math.random() < 0.5) {
+      return -goldenAngle;
+    } else {
+      return goldenAngle;
+    }
   }
 
   calculateGrowthInterval() {
@@ -303,9 +308,9 @@ class LeaveCell {
     this.parent = parent;
     const position = parent.calculatePosition();
     this.constraints = [];
-    this.width = 5;
+    this.radius = 2;
 
-    this.body = Bodies.circle(position.x + 8, position.y, 5, {
+    this.body = Bodies.circle(position.x + 8, position.y, this.radius, {
       render: { fillStyle: "#ff0000" },
       friction: 0.9,
       frictionAir: 0.5,
@@ -350,11 +355,11 @@ class LeaveCell {
 
   createAnchorConstraints() {
     const leftAnchor = {
-      x: this.body.position.x - 20 - this.width * 5,
+      x: this.body.position.x - 20 - this.radius * 5,
       y: SETTINGS.BASE_POSITION.y,
     };
     const rightAnchor = {
-      x: this.body.position.x + 20 + this.width * 5,
+      x: this.body.position.x + 20 + this.radius * 5,
       y: SETTINGS.BASE_POSITION.y,
     };
 
@@ -369,8 +374,8 @@ class LeaveCell {
       });
 
     return [
-      createAnchorConstraint(leftAnchor, -this.width),
-      createAnchorConstraint(rightAnchor, this.width),
+      createAnchorConstraint(leftAnchor, -this.radius * 3),
+      createAnchorConstraint(rightAnchor, -this.radius * 3),
     ];
   }
 

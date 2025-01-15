@@ -2,10 +2,14 @@
 const createOverlayCanvas = () => {
   const overlayCanvas = document.createElement("canvas");
   overlayCanvas.id = "organicRenderer";
-  overlayCanvas.style.position = "absolute";
+  overlayCanvas.style.position = "fixed";
+  overlayCanvas.style.zIndex = "100";
   overlayCanvas.style.top = "0";
   overlayCanvas.style.left = "0";
+  overlayCanvas.style.width = "100vw";
+  overlayCanvas.style.height = "100vh";
   overlayCanvas.style.pointerEvents = "none"; // Let events pass through to Matter.js
+
   document.body.appendChild(overlayCanvas);
   return overlayCanvas;
 };
@@ -44,8 +48,6 @@ class OrganicRenderer {
 
     const start = stem.parent.body.position;
     const end = stem.body.position;
-
-    console.log("Drawing stem at", start);
 
     // Calculate control points for natural curve
     const dx = end.x - start.x;
@@ -86,7 +88,6 @@ class OrganicRenderer {
   drawLeaf(leaf) {
     const pos = leaf.body.position;
     const size = 10; // Adjust for visibility
-    console.log("Drawing leaf node at:", leaf.body.position, size);
 
     this.ctx.save();
     this.ctx.translate(pos.x, pos.y);
@@ -131,5 +132,7 @@ class OrganicRenderer {
   }
 }
 
-// Initialize the renderer after Matter.js setup
-const organicRenderer = new OrganicRenderer();
+window.onload = () => {
+  // Initialize the renderer after Matter.js setup
+  const organicRenderer = new OrganicRenderer();
+};
