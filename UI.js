@@ -63,18 +63,18 @@ const SETTINGS_SCHEMA = {
   display: {
     label: "Real-Time Display Settings",
     settings: {
-      constrainVisibility: {
-        type: "boolean",
-        label: "Constrain Visibility",
-        default: false,
-        category: "runtime",
-      },
-      renderSkin: {
-        type: "boolean",
-        label: "Render Plant Skin",
-        default: true,
-        category: "runtime",
-      },
+      // constrainVisibility: {
+      //   type: "boolean",
+      //   label: "Constrain Visibility",
+      //   default: false,
+      //   category: "runtime",
+      // },
+      // renderSkin: {
+      //   type: "boolean",
+      //   label: "Render Plant Skin",
+      //   default: true,
+      //   category: "runtime",
+      // },
     },
   },
 };
@@ -155,7 +155,7 @@ class SettingsManager {
       const section = document.createElement("div");
       section.className = "settings-section mb-4";
 
-      const heading = document.createElement("h2");
+      const heading = document.createElement("h6");
       heading.textContent = categoryData.label;
       section.appendChild(heading);
 
@@ -190,8 +190,7 @@ class SettingsManager {
 
   createSettingUI(container, category, key, setting) {
     const wrapper = document.createElement("div");
-    wrapper.className = "mt-4";
-    wrapper.style = "margin-top: 1rem;"
+    wrapper.className = "mt-2";
 
     const label = document.createElement("label");
     label.className = "form-label ";
@@ -226,14 +225,14 @@ class SettingsManager {
         break;
 
       case "boolean":
-        const switchDiv = document.createElement("div");
-        switchDiv.className = "form-check form-switch";
-        input = document.createElement("input");
-        input.type = "checkbox";
-        input.className = "form-check-input";
-        input.checked = this.settings[category][key];
-        switchDiv.appendChild(input);
-        wrapper.appendChild(switchDiv);
+        // const switchDiv = document.createElement("div");
+        // switchDiv.className = "form-check form-switch";
+        // input = document.createElement("input");
+        // input.type = "checkbox";
+        // input.className = "form-check-input";
+        // input.checked = this.settings[category][key];
+        // switchDiv.appendChild(input);
+        // wrapper.appendChild(switchDiv);
         break;
     }
 
@@ -276,7 +275,7 @@ const settingsManager = new SettingsManager(SETTINGS_SCHEMA);
 // Usage
 document.addEventListener("DOMContentLoaded", () => {
   // Generate UI
-  const startButton = settingsManager.generateUI("UIContainer");
+  const startButton = settingsManager.generateUI("menuContent");
 
   // Add observer to log changes
   settingsManager.addObserver((change) => {
