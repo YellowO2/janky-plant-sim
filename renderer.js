@@ -2,12 +2,10 @@
 const createOverlayCanvas = () => {
   const overlayCanvas = document.createElement("canvas");
   overlayCanvas.id = "organicRenderer";
-  overlayCanvas.style.position = "fixed";
+  overlayCanvas.style.position = "absolute";
   overlayCanvas.style.zIndex = "100";
   overlayCanvas.style.top = "0";
   overlayCanvas.style.left = "0";
-  overlayCanvas.style.width = "100vw";
-  overlayCanvas.style.height = "100vh";
   overlayCanvas.style.pointerEvents = "none"; // Let events pass through to Matter.js
 
   document.body.appendChild(overlayCanvas);
@@ -24,7 +22,7 @@ class OrganicRenderer {
   setup() {
     // Match size with Matter.js canvas
     this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.canvas.height = canvasHeight;
 
     // Start render loop
     this.render = this.render.bind(this);
@@ -131,8 +129,3 @@ class OrganicRenderer {
     return Math.max(baseThickness * generationFactor * depthFactor, 1);
   }
 }
-
-window.onload = () => {
-  // Initialize the renderer after Matter.js setup
-  const organicRenderer = new OrganicRenderer();
-};

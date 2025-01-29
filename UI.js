@@ -296,10 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const settings = settingsManager.getSettings();
 
       // Seed initialization
-      const seed = new Seed(
-        window.innerWidth / 2,
-        window.innerHeight - window.innerHeight / 5
-      );
+      const seed = new Seed(window.innerWidth / 2, canvasHeight);
       console.log("setting", settings);
 
       // Initialize the root stem
@@ -307,6 +304,8 @@ document.addEventListener("DOMContentLoaded", () => {
         parent: seed,
         width: settings.simulation.cellSize,
       });
+
+      const organicRenderer = new OrganicRenderer();
     }
   });
 });

@@ -32,14 +32,13 @@
       body {
         /* background: url("./background.png") no-repeat center center fixed;
         background-size: cover; */
+        overflow-y: auto;
       }
 
       #canvas {
-        position: fixed;
+        /* position: fixed; */
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
         opacity: 0.5;
       }
 
@@ -69,6 +68,8 @@
         Events,
       } = Matter;
 
+      const canvasHeight = 4000;
+
       Matter.use("matter-attractors");
 
       // Load background image
@@ -84,11 +85,12 @@
         engine: engine,
         options: {
           width: window.innerWidth,
-          height: window.innerHeight,
+          height: canvasHeight,
           wireframes: false,
           background: "transparent",
         },
       });
+      canvas.height = canvasHeight;
 
       const world = engine.world;
       world.gravity.y = 0.5; // Gravity for branches
@@ -99,6 +101,13 @@
           console.log("paused");
           debugger;
         }
+      });
+
+      window.addEventListener("load", () => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth", // Optional: Adds smooth scrolling
+        });
       });
 
       // ----- RUN ENGINE -----
