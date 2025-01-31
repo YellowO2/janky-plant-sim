@@ -11,7 +11,9 @@ A janky plant physics 🌱 simulation where plants grow, sway, and leaves fall. 
 
 Short demo :
 ![Demo GIF](./assets/demo.gif)
-![Demo Link](https://yellowo2.github.io/janky-plant-sim/)
+
+Try it out here!
+[Demo Link](https://yellowo2.github.io/janky-plant-sim/)
 
 ## Future Plans 🌱🌱
 - add some flying bugs so i can say its bUGgy
