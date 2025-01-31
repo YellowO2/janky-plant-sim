@@ -36,18 +36,18 @@ var attractiveBody = Bodies.circle(
   }
 );
 
-World.add(world, attractiveBody);
+// World.add(world, attractiveBody);
 
-var mouse = Mouse.create(render.canvas);
+// var mouse = Mouse.create(render.canvas);
 
-Events.on(render, "afterRender", function () {
-  // if (!mouse.position.x) {
-  //   return;
-  // }
+// Events.on(render, "afterRender", function () {
+//   // if (!mouse.position.x) {
+//   //   return;
+//   // }
 
-  // smoothly move the attractor body towards the mouse
-  Body.translate(attractiveBody, {
-    x: (mouse.position.x - attractiveBody.position.x) * 0.25,
-    y: (mouse.position.y - attractiveBody.position.y) * 0.25,
-  });
-});
+//   // smoothly move the attractor body towards the mouse
+//   Body.translate(attractiveBody, {
+//     x: (mouse.position.x - attractiveBody.position.x) * 0.25,
+//     y: (mouse.position.y - attractiveBody.position.y) * 0.25,
+//   });
+// });

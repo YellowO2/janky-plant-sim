@@ -2,6 +2,7 @@
 
 let allStems = [];
 let allLeaves = [];
+SEGMENT_LENGTH = 3;
 
 class StemCell {
   constructor({
@@ -160,7 +161,7 @@ class StemCell {
 
   calculateGrowthInterval() {
     return (
-      2000 +
+      5000 +
       (this.branchDepth * 50) /
         settingsManager.getSettings().simulation.timeControl
     );
@@ -272,7 +273,7 @@ class StemCell {
   }
 
   cellReproduction() {
-    if (this.segmentLength == 5) {
+    if (this.segmentLength == SEGMENT_LENGTH) {
       new LeaveCell(this);
     } else {
       new StemCell({
@@ -316,7 +317,10 @@ class LeaveCell {
   constructor(parent) {
     this.parent = parent;
     this.age = 0;
+
     this.maxAge = 50; // Detach when age reaches this
+    this.matureAge = Math.floor(this.maxAge / 3);
+
     this.removeDelay = 20000; // Remove from world after 3s
     this.hasFallen = false;
 
@@ -324,8 +328,8 @@ class LeaveCell {
     this.constraints = [];
     this.radius = 2;
 
-    this.body = Bodies.circle(position.x + 8, position.y, this.radius, {
-      render: { fillStyle: "#ff0000" },
+    this.body = Bodies.circle(position.x, position.y, this.radius, {
+      render: { fillStyle: "#62BD89" },
       frictionAir: 0.1,
       collisionFilter: { group: parent.growthAngle === -1 },
     });
@@ -333,7 +337,6 @@ class LeaveCell {
     World.add(world, this.body);
     this.createConstraints();
     allLeaves.push(this);
-    this.growNewSegment();
   }
 
   createConstraints() {
@@ -362,11 +365,12 @@ class LeaveCell {
     });
   }
   getColor() {
-    const transitionRatio = this.age / this.maxAge;
+    const transitionRatio =
+      this.age > this.matureAge ? (this.age - this.matureAge) / this.maxAge : 0;
 
     // Define start and end colors as objects
     const startRgb = { r: 102, g: 186, b: 91, a: 0.8 };
-    const endRgb = { r: 234, g: 229, b: 30, a: 0.9 };
+    const endRgb = { r: 181, g: 91, b: 29, a: 0.9 };
 
     const rgb = {
       r: Math.round(startRgb.r + (endRgb.r - startRgb.r) * transitionRatio),
@@ -379,9 +383,10 @@ class LeaveCell {
   }
 
   growLeaves() {
-    console.log("grow called");
     const interval = setInterval(() => {
-      if (this.age >= this.maxAge) {
+      if (this.age == this.matureAge) {
+        this.growNewSegment();
+      } else if (this.age >= this.maxAge) {
         clearInterval(interval);
         this.detach();
         return;
@@ -392,7 +397,10 @@ class LeaveCell {
   }
 
   calculateGrowthInterval() {
-    return 10000 / settingsManager.getSettings().simulation.timeControl;
+    return (
+      (5000 + Math.min(this.parent.generation * 400, 4000)) /
+      settingsManager.getSettings().simulation.timeControl
+    );
   }
 
   createAnchorConstraints() {

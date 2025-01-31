@@ -39,7 +39,9 @@
         /* position: fixed; */
         top: 0;
         left: 0;
-        opacity: 0.5;
+        /* opacity: 0.5; */
+        background-color: black;
+        color: black;
       }
 
       #UIContainer {
@@ -87,13 +89,13 @@
           width: window.innerWidth,
           height: canvasHeight,
           wireframes: false,
-          background: "transparent",
+          // background: "transparent",
         },
       });
       canvas.height = canvasHeight;
 
       const world = engine.world;
-      world.gravity.y = 0.5; // Gravity for branches
+      world.gravity.y = 0.2; // Gravity for branches
 
       // Pause functionality
       window.addEventListener("keydown", (event) => {

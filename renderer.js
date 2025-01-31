@@ -85,22 +85,31 @@ class OrganicRenderer {
 
   drawLeaf(leaf) {
     const pos = leaf.body.position;
-    const size = 10; // Adjust for visibility
+
+    // Non-uniform scaling: leaves grow more in height than in width
+    const baseSize = 4; // Starting size
+    const widthScale =
+      leaf.age < leaf.matureAge ? leaf.age * 0.2 : leaf.matureAge * 0.2; // Grows slowly in width
+    const heightScale =
+      leaf.age < leaf.matureAge ? leaf.age * 0.3 : leaf.matureAge * 0.3; // Grows faster in height
+
+    const width = baseSize * widthScale;
+    const height = baseSize * heightScale;
 
     this.ctx.save();
     this.ctx.translate(pos.x, pos.y);
 
-    // // Set style for petals
+    // Set style for petals
     this.ctx.fillStyle = leaf.getColor();
 
     // Left petal
     this.ctx.beginPath();
     this.ctx.ellipse(
-      -size / 4,
-      0,
-      size / 3,
-      size / 2,
-      -Math.PI / 4,
+      -width / 3, // X position
+      0, // Y position
+      width / 3,
+      height / 2,
+      -Math.PI / 4, // Rotation
       0,
       Math.PI * 2
     );
@@ -109,11 +118,11 @@ class OrganicRenderer {
     // Right petal
     this.ctx.beginPath();
     this.ctx.ellipse(
-      size / 4,
-      0,
-      size / 3,
-      size / 2,
-      Math.PI / 4,
+      width / 3, // X position
+      0, // Y position
+      width / 3, // Width (scaled)
+      height / 2, // Height (scaled)
+      Math.PI / 4, // Rotation
       0,
       Math.PI * 2
     );
