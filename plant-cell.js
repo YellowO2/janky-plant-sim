@@ -54,7 +54,6 @@ class StemCell {
     this.body = Bodies.circle(position.x, position.y, this.width, {
       render: { fillStyle: this.template.transitionColors.start },
       frictionAir: 0.5,
-      restitution: 0.2,
       collisionFilter: { group: this.growthAngle === -1 },
     });
     World.add(world, this.body);
@@ -68,6 +67,7 @@ class StemCell {
           x: window.innerWidth / 2,
           y: window.innerHeight - window.innerHeight / 5,
         };
+
     return {
       x:
         parentPos.x +
@@ -160,7 +160,7 @@ class StemCell {
 
   calculateGrowthInterval() {
     return (
-      10000 +
+      2000 +
       (this.branchDepth * 50) /
         settingsManager.getSettings().simulation.timeControl
     );
@@ -191,7 +191,7 @@ class StemCell {
   calculateCellMaxIterations() {
     return (
       settingsManager.getSettings().simulation.maxIterations -
-      this.generation * 0.5 -
+      this.generation * 0.6 -
       this.branchDepth * 4
     );
   }
@@ -240,10 +240,19 @@ class StemCell {
     ) {
       const angleOffset = this.calculateBranchAngleOffset();
 
+      // Ensure the branch grows upward or outward
+      let branchAngle = this.growthAngle + angleOffset;
+      const maxDownwardAngle = Math.PI - 0.5;
+      if (branchAngle > maxDownwardAngle) {
+        branchAngle = Math.PI / 4; // Default to 45 degrees if angle is too steep
+      } else if (branchAngle < -maxDownwardAngle) {
+        branchAngle = -Math.PI / 4;
+      }
+
       new StemCell({
         width: settingsManager.getSettings().simulation.cellSize,
         parent: this,
-        growthAngle: this.growthAngle + angleOffset,
+        growthAngle: branchAngle,
         branchDepth: this.branchDepth + 1,
         template: this.template,
         generation: this.generation + 1,
@@ -254,7 +263,7 @@ class StemCell {
     new StemCell({
       width: settingsManager.getSettings().simulation.cellSize,
       parent: this,
-      growthAngle: this.growthAngle,
+      growthAngle: this.growthAngle + Math.random() * 0.2,
       branchDepth: this.branchDepth,
       template: this.template,
       generation: this.generation + 1,
@@ -282,13 +291,20 @@ class StemCell {
     return this.template.branchProbability(this.generation);
   }
 
+  // calculateBranchAngleOffset() {
+  //   const goldenAngle = 1.19998161486; // ~137.5 degrees
+  //   if (Math.random() < 0.5) {
+  //     return -goldenAngle;
+  //   } else {
+  //     return goldenAngle;
+  //   }
+  // }
+
   calculateBranchAngleOffset() {
-    const goldenAngle = 1.19998161486; // ~137.5 degrees
-    if (Math.random() < 0.5) {
-      return -goldenAngle;
-    } else {
-      return goldenAngle;
-    }
+    const minAngle = Math.PI / 6; // 30 degrees in radians
+    const maxAngle = Math.PI / 3; // 60 degrees in radians
+    const angleOffset = minAngle + Math.random() * (maxAngle - minAngle); // Random angle between 30° and 60°
+    return Math.random() < 0.5 ? -angleOffset : angleOffset; // Randomly choose left or right
   }
 
   leafProbability() {
@@ -296,44 +312,42 @@ class StemCell {
     return 1;
   }
 }
-
 class LeaveCell {
   constructor(parent) {
-    console.log("this called");
     this.parent = parent;
+    this.age = 0;
+    this.maxAge = 50; // Detach when age reaches this
+    this.removeDelay = 20000; // Remove from world after 3s
+    this.hasFallen = false;
+
     const position = parent.calculatePosition();
     this.constraints = [];
     this.radius = 2;
 
     this.body = Bodies.circle(position.x + 8, position.y, this.radius, {
       render: { fillStyle: "#ff0000" },
-      friction: 0.9,
-      frictionAir: 0.5,
-      restitution: 0.2,
+      frictionAir: 0.1,
       collisionFilter: { group: parent.growthAngle === -1 },
     });
 
     World.add(world, this.body);
     this.createConstraints();
-
     allLeaves.push(this);
-    console.log("this called 3");
-
     this.growNewSegment();
   }
 
   createConstraints() {
     if (!this.parent) return;
 
-    this.constraints.forEach((constraint) => {
-      World.remove(world, constraint);
-    });
+    this.constraints.forEach((constraint) => World.remove(world, constraint));
 
     const mainConstraint = this.createMainConstraint();
     const [leftConstraint, rightConstraint] = this.createAnchorConstraints();
 
     this.constraints = [mainConstraint, leftConstraint, rightConstraint];
     World.add(world, this.constraints);
+
+    this.growLeaves();
   }
 
   createMainConstraint() {
@@ -346,6 +360,39 @@ class LeaveCell {
       damping: 0.3,
       render: { visible: false },
     });
+  }
+  getColor() {
+    const transitionRatio = this.age / this.maxAge;
+
+    // Define start and end colors as objects
+    const startRgb = { r: 102, g: 186, b: 91, a: 0.8 };
+    const endRgb = { r: 234, g: 229, b: 30, a: 0.9 };
+
+    const rgb = {
+      r: Math.round(startRgb.r + (endRgb.r - startRgb.r) * transitionRatio),
+      g: Math.round(startRgb.g + (endRgb.g - startRgb.g) * transitionRatio),
+      b: Math.round(startRgb.b + (endRgb.b - startRgb.b) * transitionRatio),
+      a: startRgb.a + (endRgb.a - startRgb.a) * transitionRatio, // Interpolate alpha too
+    };
+
+    return `rgba(${rgb.r},${rgb.g},${rgb.b},${rgb.a})`;
+  }
+
+  growLeaves() {
+    console.log("grow called");
+    const interval = setInterval(() => {
+      if (this.age >= this.maxAge) {
+        clearInterval(interval);
+        this.detach();
+        return;
+      }
+      this.age++;
+      // this.expandStem();
+    }, this.calculateGrowthInterval());
+  }
+
+  calculateGrowthInterval() {
+    return 10000 / settingsManager.getSettings().simulation.timeControl;
   }
 
   createAnchorConstraints() {
@@ -376,5 +423,20 @@ class LeaveCell {
 
   growNewSegment() {
     this.parent.growNewSegment();
+  }
+
+  detach() {
+    if (this.hasFallen) return;
+
+    this.hasFallen = true;
+    this.constraints.forEach((constraint) => World.remove(world, constraint));
+    this.constraints = [];
+
+    setTimeout(() => this.removeFromWorld(), this.removeDelay);
+  }
+
+  removeFromWorld() {
+    World.remove(world, this.body);
+    allLeaves.splice(allLeaves.indexOf(this), 1);
   }
 }

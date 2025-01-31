@@ -90,8 +90,8 @@ class OrganicRenderer {
     this.ctx.save();
     this.ctx.translate(pos.x, pos.y);
 
-    // Set style for petals
-    this.ctx.fillStyle = "rgba(102, 186, 91, 0.8)";
+    // // Set style for petals
+    this.ctx.fillStyle = leaf.getColor();
 
     // Left petal
     this.ctx.beginPath();

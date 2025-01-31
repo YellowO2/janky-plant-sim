@@ -89,8 +89,8 @@ class Seed {
 const TEMPLATES = {
   tree: {
     maxDepth: 4,
-    branchProbability: (generation) => 0.5 - 5 / (generation + 1),
-    transitionColors: { start: "#66ba5b", end: "#4c4f46" },
+    branchProbability: (generation) => 0.4 - 5 / (generation + 1),
+    transitionColors: { start: "#66ba5b", end: "#4c3d2d" },
     stiffnessRange: { start: 0.2, end: 0.8 },
   },
   custom: {
