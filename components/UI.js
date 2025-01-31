@@ -1,11 +1,11 @@
 // Define settings schema that will drive both the UI and settings management
 const SETTINGS_SCHEMA = {
   simulation: {
-    label: "Pre-Growth Settings",
+    label: "Plant Settings",
     settings: {
       timeControl: {
         type: "number",
-        label: "Time Control",
+        label: "Time Multiplier",
         default: 10,
         min: 1,
         max: 100,
@@ -23,7 +23,7 @@ const SETTINGS_SCHEMA = {
       },
       growIncrement: {
         type: "number",
-        label: "Grow Increment",
+        label: "Increments of stem width per iteration",
         default: 0.5,
         min: 0.1,
         max: 5,
@@ -32,7 +32,7 @@ const SETTINGS_SCHEMA = {
       },
       maxIterations: {
         type: "number",
-        label: "Max Growth Iterations",
+        label: "Max stem width iterations",
         default: 80,
         min: 10,
         max: 200,
@@ -41,40 +41,40 @@ const SETTINGS_SCHEMA = {
       },
       cellSize: {
         type: "number",
-        label: "The size of the physics simulation cell",
+        label: "Initial size of the physics simulation cell",
         default: 1,
         min: 0.5,
         max: 20,
         step: 0.5,
         category: "pre-growth",
       },
-      plantTemplate: {
-        type: "select",
-        label: "Plant Template",
-        default: "tree",
-        options: [
-          { value: "tree", label: "Tree" },
-          { value: "custom", label: "Custom" },
-        ],
-        category: "pre-growth",
-      },
+      // plantTemplate: {
+      //   type: "select",
+      //   label: "Plant Template",
+      //   default: "tree",
+      //   options: [
+      //     { value: "tree", label: "Tree" },
+      //     { value: "custom", label: "Custom" },
+      //   ],
+      //   category: "pre-growth",
+      // },
     },
   },
   display: {
-    label: "Real-Time Display Settings",
+    label: "Display Settings",
     settings: {
-      // constrainVisibility: {
-      //   type: "boolean",
-      //   label: "Constrain Visibility",
-      //   default: false,
-      //   category: "runtime",
-      // },
-      // renderSkin: {
-      //   type: "boolean",
-      //   label: "Render Plant Skin",
-      //   default: true,
-      //   category: "runtime",
-      // },
+      constrainVisibility: {
+        type: "boolean",
+        label: "Constrain Visibility",
+        default: false,
+        category: "runtime",
+      },
+      renderSkin: {
+        type: "boolean",
+        label: "Render Plant Skin",
+        default: true,
+        category: "runtime",
+      },
     },
   },
 };
@@ -89,16 +89,16 @@ class Seed {
 const TEMPLATES = {
   tree: {
     maxDepth: 4,
-    branchProbability: (generation) => 0.4 - 5 / (generation + 1),
+    branchProbability: (generation) => 0.4 - 4 / (generation + 1),
     transitionColors: { start: "#66ba5b", end: "#4c3d2d" },
     stiffnessRange: { start: 0.2, end: 0.8 },
   },
-  custom: {
-    maxDepth: 4,
-    branchProbability: (depth) => 0.2 - 0.05 * depth,
-    transitionColors: { start: "#6b8e23", end: "#6b3323" },
-    stiffnessRange: { start: 0.6, end: 0.8 },
-  },
+  // custom: {
+  //   maxDepth: 4,
+  //   branchProbability: (depth) => 0.2 - 0.05 * depth,
+  //   transitionColors: { start: "#6b8e23", end: "#6b3323" },
+  //   stiffnessRange: { start: 0.6, end: 0.8 },
+  // },
 };
 
 class SettingsManager {
@@ -153,9 +153,10 @@ class SettingsManager {
 
     Object.entries(this.schema).forEach(([category, categoryData]) => {
       const section = document.createElement("div");
-      section.className = "settings-section mb-4";
+      section.className = "settings-section mb-5";
 
-      const heading = document.createElement("h6");
+      const heading = document.createElement("h5");
+      heading.className = "mb-3";
       heading.textContent = categoryData.label;
       section.appendChild(heading);
 
@@ -181,7 +182,7 @@ class SettingsManager {
     // Add start button
     const startButton = document.createElement("button");
     startButton.id = "startButton";
-    startButton.className = "btn btn-primary mt-3";
+    startButton.className = "btn btn-primary mb-3";
     startButton.textContent = "Start Growth";
     container.appendChild(startButton);
 
@@ -193,7 +194,7 @@ class SettingsManager {
     wrapper.className = "mt-2";
 
     const label = document.createElement("label");
-    label.className = "form-label ";
+    label.className = "form-label";
     label.textContent = setting.label + " ";
     wrapper.appendChild(label);
 
@@ -212,27 +213,27 @@ class SettingsManager {
           : this.settings[category][key];
         break;
 
-      case "select":
-        input = document.createElement("select");
-        input.className = "form-select";
-        setting.options.forEach((option) => {
-          const opt = document.createElement("option");
-          opt.value = option.value;
-          opt.textContent = option.label;
-          input.appendChild(opt);
-        });
-        input.value = this.settings[category][key];
-        break;
+      // case "select":
+      //   input = document.createElement("select");
+      //   input.className = "form-select";
+      //   setting.options.forEach((option) => {
+      //     const opt = document.createElement("option");
+      //     opt.value = option.value;
+      //     opt.textContent = option.label;
+      //     input.appendChild(opt);
+      //   });
+      //   input.value = this.settings[category][key];
+      //   break;
 
       case "boolean":
-        // const switchDiv = document.createElement("div");
-        // switchDiv.className = "form-check form-switch";
-        // input = document.createElement("input");
-        // input.type = "checkbox";
-        // input.className = "form-check-input";
-        // input.checked = this.settings[category][key];
-        // switchDiv.appendChild(input);
-        // wrapper.appendChild(switchDiv);
+        const switchDiv = document.createElement("div");
+        switchDiv.className = "form-check form-switch";
+        input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "form-check-input";
+        input.checked = this.settings[category][key];
+        switchDiv.appendChild(input);
+        wrapper.appendChild(switchDiv);
         break;
     }
 
@@ -291,6 +292,8 @@ document.addEventListener("DOMContentLoaded", () => {
       settingsManager.setPreGrowthSettingsLocked(true);
       startButton.textContent = "Growth In Progress";
       startButton.disabled = true;
+
+      document.getElementById("UIContainer").style.display = "none";
 
       // Initialize growth with current settings
       const settings = settingsManager.getSettings();

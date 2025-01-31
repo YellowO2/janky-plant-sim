@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tree Growth with Matter.js</title>
-    <!-- <script src="./matterjs.min.js"></script> -->
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.12.0/matter.min.js"
       integrity="sha512-SUHfb02jiMRJwVgSanT2JoGkbNlIN6YYSji7upZITAyeB5rFiJ90J0NLahmKzlDMod40PXSYSqWM0rH2zIV4Hg=="
@@ -17,15 +16,16 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <script src="./matter-attractors.js"></script>
-    <script src="./UI.js"></script>
+    <script src="./library/matter-attractors.js"></script>
+    <script src="./components/UI.js"></script>
   </head>
   <body>
     <div class="card bg-dark text-light p-3" id="UIContainer">
-      <h5 class="card-title">UI Menu</h5>
-      <div class="card-body" id="menuContent"></div>
+      <h3 class="card-title">Plant Physics Simulation</h3>
+      ps: the plant starts growing from bottom of the page, incase u can't see
+      it
+      <div class="card-body p-0 pt-3" id="menuContent"></div>
     </div>
-
     <canvas id="canvas"></canvas>
 
     <style>
@@ -33,6 +33,7 @@
         /* background: url("./background.png") no-repeat center center fixed;
         background-size: cover; */
         overflow-y: auto;
+        background-color: black;
       }
 
       #canvas {
@@ -41,7 +42,6 @@
         left: 0;
         /* opacity: 0.5; */
         background-color: black;
-        color: black;
       }
 
       #UIContainer {
@@ -51,12 +51,13 @@
         z-index: 10;
         border-radius: 8px;
         max-height: 100vh;
+        width: 100vw;
         overflow-y: auto;
       }
     </style>
 
-    <script src="./plant-cell.js"></script>
-    <script src="./renderer.js"></script>
+    <script src="components/plant-cell.js"></script>
+    <script src="./components/renderer.js"></script>
 
     <script>
       const {
@@ -74,9 +75,9 @@
 
       Matter.use("matter-attractors");
 
-      // Load background image
-      const backgroundImg = new Image();
-      backgroundImg.src = "./Dark Green and Cream Simple Background.png";
+      // probably USELESS
+      // const backgroundImg = new Image();
+      // backgroundImg.src = "./Dark Green and Cream Simple Background.png";
 
       // Initialize engine and renderer
       const engine = Engine.create();
@@ -95,7 +96,7 @@
       canvas.height = canvasHeight;
 
       const world = engine.world;
-      world.gravity.y = 0.2; // Gravity for branches
+      world.gravity.y = 0.6; // Gravity for branches
 
       // Pause functionality
       window.addEventListener("keydown", (event) => {
@@ -117,6 +118,6 @@
       Render.run(render);
     </script>
 
-    <script src="./mouse.js"></script>
+    <script src="./components/mouse.js"></script>
   </body>
 </html>

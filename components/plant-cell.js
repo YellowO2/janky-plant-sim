@@ -2,7 +2,7 @@
 
 let allStems = [];
 let allLeaves = [];
-SEGMENT_LENGTH = 3;
+SEGMENT_LENGTH = 2;
 
 class StemCell {
   constructor({
@@ -10,9 +10,7 @@ class StemCell {
     parent = null,
     growthAngle = 0,
     branchDepth = 0,
-    template = settingsManager.getSettings().simulation.plantTemplate === "tree"
-      ? TEMPLATES.tree
-      : TEMPLATES.custom,
+    template = TEMPLATES.tree,
     generation = 0,
     segmentLength = 0,
   } = {}) {
@@ -193,7 +191,7 @@ class StemCell {
     return (
       settingsManager.getSettings().simulation.maxIterations -
       this.generation * 0.6 -
-      this.branchDepth * 4
+      this.branchDepth * 5
     );
   }
 
@@ -264,7 +262,7 @@ class StemCell {
     new StemCell({
       width: settingsManager.getSettings().simulation.cellSize,
       parent: this,
-      growthAngle: this.growthAngle + Math.random() * 0.2,
+      growthAngle: this.growthAngle,
       branchDepth: this.branchDepth,
       template: this.template,
       generation: this.generation + 1,
@@ -318,8 +316,8 @@ class LeaveCell {
     this.parent = parent;
     this.age = 0;
 
-    this.maxAge = 50; // Detach when age reaches this
-    this.matureAge = Math.floor(this.maxAge / 3);
+    this.maxAge = 80; // Detach when age reaches this
+    this.matureAge = Math.floor(this.maxAge / 5);
 
     this.removeDelay = 20000; // Remove from world after 3s
     this.hasFallen = false;
@@ -398,7 +396,7 @@ class LeaveCell {
 
   calculateGrowthInterval() {
     return (
-      (5000 + Math.min(this.parent.generation * 400, 4000)) /
+      (4000 + Math.min(this.parent.generation * 100, 3000)) /
       settingsManager.getSettings().simulation.timeControl
     );
   }
