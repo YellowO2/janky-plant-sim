@@ -1,22 +1,17 @@
+# Interactive Plant Simulation 🌱
 
-# Janky plant simulation :(  
+A lightweight, interactive physics simulation where plants procedurally grow, sway, and respond to your touch. Powered by JavaScript and the Matter.js 2D physics engine.
 
+**[Try the Live Demo!](https://yellowo2.github.io/janky-plant-sim/)**
 
-A janky plant physics 🌱 simulation where plants grow, sway, and leaves fall. You can touch the plant too if you like ...
+![Demo GIF of the plant simulation](./assets/demo.gif)
 
-![when it is big](./assets/screenshot1.png)
-![when it is small](./assets/screenshot2.png)
+## Key Features
 
-## Demo 🌱🌱
+- **Procedural Generation:** Every plant grows in a unique way, segment by segment.
+- **Physics-Based Movement:** Leverages the Matter.js engine to make the plant stems bend and sway realistically, and react to the touch of users.
 
-Short demo :
-![Demo GIF](./assets/demo.gif)
+## Challenges & Key Learnings
 
-Try it out here!
-[Demo Link](https://yellowo2.github.io/janky-plant-sim/)
-
-## Future Plans 🌱🌱
-- add some flying bugs so i can say its bUGgy
-- add some flowers
-
-🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱 just some plants 🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+The main challenge was making the plant interactive and dynamic while it was still growing. It's one thing to apply physics to a static object, but it's much harder for an object that is constantly adding new parts to itself. Another difficulty was applying suitable constraints so that the plant does not topple down while maintaining flexibility.
+Overall, it was a great learning about how plants grow, procedurally generating them with OOP and the concept of Constraints.
