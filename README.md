@@ -1,4 +1,4 @@
-# Interactive Plant Simulation 🌱
+# Interactive Plant Growth Simulation via cell reproduction 🌱
 
 A lightweight, interactive physics simulation where plants procedurally grow, sway, and respond to your touch. Powered by JavaScript and the Matter.js 2D physics engine.
 
