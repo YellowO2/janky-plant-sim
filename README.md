@@ -1,4 +1,4 @@
-# Interactive Plant Growth Simulation via cell reproduction 🌱
+# Interactive Plant Growth Simulation via cell reproduction (recursion) 🌱
 
 A lightweight, interactive physics simulation where plants procedurally grow, sway, and respond to your touch. Powered by JavaScript and the Matter.js 2D physics engine.
 
